@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
 import { CheckCircle, TrendingUp, TrendingDown, Minus, Crown, Medal, Send, ChevronDown } from 'lucide-react'
+import ReportCard from '../components/ReportCard'
 
 const RANKS = [
   { name: 'Stone Hands', min: 0, max: 499, color: '#888', icon: '🪨' },
@@ -270,11 +271,13 @@ function TradingFloorSidebar({ user }) {
       if (data) {
         setMessages(data)
         const userIds = [...new Set(data.map(m => m.user_id))]
-        const { data: profiles } = await supabase.from('profiles').select('id, username_color').in('id', userIds)
-        if (profiles) {
-          const colorMap = {}
-          profiles.forEach(p => { colorMap[p.id] = p.username_color || '#e8c84a' })
-          setUserColors(colorMap)
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase.from('profiles').select('id, username_color').in('id', userIds)
+          if (profiles) {
+            const colorMap = {}
+            profiles.forEach(p => { colorMap[p.id] = p.username_color || '#e8c84a' })
+            setUserColors(colorMap)
+          }
         }
       }
     }
@@ -312,7 +315,6 @@ function TradingFloorSidebar({ user }) {
         <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)', flex: 1 }}>Trading Floor</span>
         <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontFamily: 'monospace' }}>{timeUntilReset}</span>
       </div>
-
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column' }}>
         {messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: '13px' }}>🕯️ The floor is quiet.</div>
@@ -328,7 +330,6 @@ function TradingFloorSidebar({ user }) {
         )}
         <div ref={bottomRef} />
       </div>
-
       <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '8px', alignItems: 'center' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', gap: '6px' }}>
           <span style={{ color: usernameColor, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
@@ -362,16 +363,13 @@ function LeaderboardSidebar() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
       style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
-      <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)' }}>
-        🏆 Top Traders
-      </h3>
+      <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '14px', color: 'var(--text-dim)' }}>🏆 Top Traders</h3>
       {loading ? <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Loading...</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {leaders.map((l, i) => {
-            const rank = getRank(l.xp || 0)
             const icons = ['🥇', '🥈', '🥉', '4', '5']
             return (
-              <div key={l.username} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div key={l.username || i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: i < 3 ? '14px' : '11px', width: '18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700' }}>{icons[i]}</span>
                 <div style={{ width: '26px', height: '26px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
                   {l.avatar_url ? <img src={l.avatar_url} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : l.username?.[0]?.toUpperCase()}
@@ -420,7 +418,10 @@ export default function HomePage({ user, sessions, onSessionSaved, xp }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
         <div>
           <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
-          <SessionFeed sessions={sessions} />
+          <ReportCard user={user} />
+          <div style={{ marginTop: '24px' }}>
+            <SessionFeed sessions={sessions} />
+          </div>
         </div>
         <div style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <LeaderboardSidebar />
