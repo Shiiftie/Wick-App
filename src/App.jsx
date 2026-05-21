@@ -9,6 +9,7 @@ import LeaderboardPage from './pages/LeaderboardPage'
 import ProfilePage from './pages/ProfilePage'
 import TradingFloorPage from './pages/TradingFloorPage'
 import BadgesPage from './pages/BadgesPage'
+import DMPage from './pages/DMPage'
 import { Zap, CheckCircle } from 'lucide-react'
 
 function AuthPage() {
@@ -97,7 +98,7 @@ function AuthPage() {
   )
 }
 
-function PaywallPage({ user, onSubscribed }) {
+function PaywallPage({ user }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -133,7 +134,6 @@ function PaywallPage({ user, onSubscribed }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: '480px', padding: '24px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>Get Full Access</p>
@@ -144,12 +144,10 @@ function PaywallPage({ user, onSubscribed }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           style={{ background: 'var(--bg-2)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(232,200,74,0.08) 0%, transparent 70%)', transform: 'translate(30px, -30px)' }} />
-
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
             <span style={{ fontSize: '48px', fontWeight: '900', color: 'var(--gold)', letterSpacing: '-2px' }}>$9.99</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '15px' }}>/month</span>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
             {features.map((f) => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -158,18 +156,13 @@ function PaywallPage({ user, onSubscribed }) {
               </div>
             ))}
           </div>
-
           {error && <p style={{ color: 'var(--red)', fontSize: '13px', marginBottom: '16px' }}>{error}</p>}
-
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSubscribe} disabled={loading}
             style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #e8c84a, #d4b030)', color: '#000', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Zap size={18} />
             {loading ? 'Loading...' : 'Subscribe Now — $9.99/mo'}
           </motion.button>
-
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>
-            Cancel anytime. No hidden fees.
-          </p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>Cancel anytime. No hidden fees.</p>
         </motion.div>
 
         <motion.button whileHover={{ opacity: 0.7 }} onClick={() => supabase.auth.signOut()}
@@ -185,6 +178,7 @@ function AppShell({ user, isSubscribed }) {
   const [view, setView] = useState('dashboard')
   const [sessions, setSessions] = useState([])
   const [xp, setXp] = useState(0)
+  const [dmRecipient, setDmRecipient] = useState(null)
 
   const fetchSessions = async () => {
     const { data } = await supabase.from('sessions').select('*').order('date', { ascending: false })
@@ -203,6 +197,11 @@ function AppShell({ user, isSubscribed }) {
 
   const handleLogout = async () => { await supabase.auth.signOut() }
 
+  const handleStartDM = (profile) => {
+    setDmRecipient({ id: profile.id, username: profile.username })
+    setView('dm')
+  }
+
   const pageVariants = {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
@@ -220,9 +219,10 @@ function AppShell({ user, isSubscribed }) {
               {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { fetchSessions(); fetchXp(); setView('dashboard') }} />}
               {view === 'history' && <HistoryPage sessions={sessions} />}
               {view === 'leaderboard' && <LeaderboardPage />}
-              {view === 'floor' && <TradingFloorPage user={user} />}
+              {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
               {view === 'badges' && <BadgesPage user={user} xp={xp} />}
               {view === 'profile' && <ProfilePage user={user} />}
+              {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('floor')} />}
             </motion.div>
           </AnimatePresence>
         </div>
