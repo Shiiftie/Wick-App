@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { LayoutDashboard, PenLine, Clock, Trophy, User, LogOut, MessageSquare, Shield } from 'lucide-react'
+import { LayoutDashboard, PenLine, Clock, Trophy, User, LogOut, MessageSquare, Shield, Users } from 'lucide-react'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const navItems = [
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { id: 'floor', label: 'Trading Floor', icon: MessageSquare },
   { id: 'badges', label: 'Ranks & Badges', icon: Shield },
+  { id: 'friends', label: 'Friends', icon: Users },
   { id: 'profile', label: 'Profile', icon: User },
 ]
 
