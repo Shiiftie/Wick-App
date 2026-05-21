@@ -122,7 +122,7 @@ export default function TradingFloorPage({ user }) {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '32px', marginBottom: '12px' }}>🕯️</p>
