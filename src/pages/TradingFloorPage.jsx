@@ -7,8 +7,10 @@ export default function TradingFloorPage({ user }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [username, setUsername] = useState('')
+  const [usernameColor, setUsernameColor] = useState('#e8c84a')
   const [loading, setLoading] = useState(false)
   const [timeUntilReset, setTimeUntilReset] = useState('')
+  const [userColors, setUserColors] = useState({})
   const bottomRef = useRef(null)
 
   const getTimeUntilMidnight = () => {
@@ -29,11 +31,14 @@ export default function TradingFloorPage({ user }) {
   }, [])
 
   useEffect(() => {
-    const fetchUsername = async () => {
-      const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-      if (data?.username) setUsername(data.username)
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('username, username_color').eq('id', user.id).single()
+      if (data) {
+        setUsername(data.username || '')
+        setUsernameColor(data.username_color || '#e8c84a')
+      }
     }
-    fetchUsername()
+    fetchProfile()
   }, [])
 
   useEffect(() => {
@@ -45,14 +50,30 @@ export default function TradingFloorPage({ user }) {
         .select('*')
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: true })
-      if (data) setMessages(data)
+      if (data) {
+        setMessages(data)
+        fetchUserColors(data)
+      }
     }
+
+    const fetchUserColors = async (msgs) => {
+      const userIds = [...new Set(msgs.map(m => m.user_id))]
+      const { data } = await supabase.from('profiles').select('id, username_color').in('id', userIds)
+      if (data) {
+        const colorMap = {}
+        data.forEach(p => { colorMap[p.id] = p.username_color || '#e8c84a' })
+        setUserColors(colorMap)
+      }
+    }
+
     fetchMessages()
 
     const channel = supabase
       .channel('trading-floor')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         setMessages(prev => [...prev, payload.new])
+        const { data } = await supabase.from('profiles').select('id, username_color').eq('id', payload.new.user_id).single()
+        if (data) setUserColors(prev => ({ ...prev, [data.id]: data.username_color || '#e8c84a' }))
       })
       .subscribe()
 
@@ -79,13 +100,6 @@ export default function TradingFloorPage({ user }) {
 
   const formatTime = (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-  const getColor = (name) => {
-    const colors = ['#7c5cfc', '#e8c84a', '#00ff88', '#ff4466', '#00c8ff', '#ff8c00', '#ff69b4', '#00bcd4', '#9c27b0']
-    let hash = 0
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-    return colors[Math.abs(hash) % colors.length]
-  }
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -107,8 +121,8 @@ export default function TradingFloorPage({ user }) {
           <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: 'auto' }}>{messages.length} messages today</span>
         </div>
 
-        {/* Messages — Twitch style */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {/* Messages */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column' }}>
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '32px', marginBottom: '12px' }}>🕯️</p>
@@ -116,20 +130,15 @@ export default function TradingFloorPage({ user }) {
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} style={{ fontSize: '14px', lineHeight: '1.6', wordBreak: 'break-word', padding: '2px 0' }}>
+              <div key={msg.id} style={{ fontSize: '14px', lineHeight: '1.6', wordBreak: 'break-word', padding: '3px 0' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px' }}>
                   {formatTime(msg.created_at)}
                 </span>
-                <span style={{
-                  fontWeight: '700',
-                  color: getColor(msg.username),
-                  marginRight: '4px'
-                }}>
-                  {msg.username}:
+                <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a', marginRight: '2px' }}>
+                  {msg.username}
                 </span>
-                <span style={{ color: 'var(--text-dim)' }}>
-                  {msg.content}
-                </span>
+                <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>:</span>
+                <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
               </div>
             ))
           )}
@@ -138,15 +147,19 @@ export default function TradingFloorPage({ user }) {
 
         {/* Input */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-3)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Share your analysis, setups, thoughts..."
-            maxLength={500}
-            style={{ flex: 1, padding: '10px 14px', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
-          />
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 12px', gap: '8px' }}>
+            <span style={{ color: usernameColor, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>:</span>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Share your analysis, setups, thoughts..."
+              maxLength={500}
+              style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '14px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+            />
+          </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
