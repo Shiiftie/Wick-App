@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
-import { User, Zap, CheckCircle, AlertCircle } from 'lucide-react'
+import { User, Zap, CheckCircle, AlertCircle, Camera } from 'lucide-react'
 
 const COLORS = [
   '#e8c84a', '#00ff88', '#ff4466', '#7c5cfc', '#00c8ff',
@@ -10,34 +10,62 @@ const COLORS = [
 
 export default function ProfilePage({ user }) {
   const [username, setUsername] = useState('')
+  const [bio, setBio] = useState('')
   const [xp, setXp] = useState(0)
   const [usernameColor, setUsernameColor] = useState('#e8c84a')
+  const [avatarUrl, setAvatarUrl] = useState(null)
+  const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('subscription') === 'success') setSubscribed(true)
 
-    const fetch = async () => {
-      const { data } = await supabase.from('profiles').select('username, xp, username_color').eq('id', user.id).single()
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('username, xp, username_color, bio, avatar_url').eq('id', user.id).single()
       if (data) {
         setUsername(data.username || '')
         setXp(data.xp || 0)
         setUsernameColor(data.username_color || '#e8c84a')
+        setBio(data.bio || '')
+        setAvatarUrl(data.avatar_url || null)
       }
     }
-    fetch()
+    fetchProfile()
   }, [])
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+
+    const fileExt = file.name.split('.').pop()
+    const filePath = `${user.id}/avatar.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true })
+
+    if (uploadError) {
+      setError(uploadError.message)
+    } else {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      const url = `${data.publicUrl}?t=${Date.now()}`
+      await supabase.from('profiles').upsert({ id: user.id, avatar_url: url })
+      setAvatarUrl(url)
+    }
+    setUploading(false)
+  }
 
   const handleSave = async () => {
     setLoading(true)
     setError('')
     setSuccess(false)
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, username, username_color: usernameColor })
+    const { error } = await supabase.from('profiles').upsert({ id: user.id, username, username_color: usernameColor, bio })
     if (error) setError(error.message)
     else setSuccess(true)
     setLoading(false)
@@ -81,6 +109,46 @@ export default function ProfilePage({ user }) {
         )}
       </AnimatePresence>
 
+      {/* Avatar + Bio Row */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '16px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+        
+        {/* Avatar */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: '88px', height: '88px', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-3)', border: '2px solid var(--border)', cursor: 'pointer' }}
+            onClick={() => fileInputRef.current?.click()}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, var(--purple), var(--gold))` }}>
+                <span style={{ fontSize: '28px', fontWeight: '900', color: '#fff' }}>{username?.[0]?.toUpperCase() || '?'}</span>
+              </div>
+            )}
+          </div>
+          <motion.div whileHover={{ scale: 1.1 }} onClick={() => fileInputRef.current?.click()}
+            style={{ position: 'absolute', bottom: 0, right: 0, width: '28px', height: '28px', background: 'var(--gold)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-2)' }}>
+            <Camera size={13} color="#000" />
+          </motion.div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+          {uploading && <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'center' }}>Uploading...</p>}
+        </div>
+
+        {/* Username + Bio */}
+        <div style={{ flex: 1 }}>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Username</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username"
+              style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Bio</label>
+            <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell other traders about yourself..." rows={3} maxLength={200}
+              style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif' }} />
+            <p style={{ color: 'var(--text-muted)', fontSize: '11px', textAlign: 'right' }}>{bio.length}/200</p>
+          </div>
+        </div>
+      </motion.div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         {/* XP Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -101,29 +169,27 @@ export default function ProfilePage({ user }) {
           <p style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '6px' }}>{500 - (xp % 500)} XP to level {xpLevel + 1}</p>
         </motion.div>
 
-        {/* Account Card */}
+        {/* Chat Color Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{ width: '36px', height: '36px', background: 'rgba(124,92,252,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <User size={18} color="var(--purple)" />
             </div>
-            <span style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chat Color</span>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '4px' }}>Email</p>
-          <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '16px', color: 'var(--text)' }}>{user.email}</p>
-          <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px' }}>Username</p>
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username"
-            style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '16px' }} />
-
-          <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '10px' }}>Chat Color</p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '12px' }}>Your username color in the Trading Floor</p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
             {COLORS.map(color => (
               <motion.div key={color} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }} onClick={() => setUsernameColor(color)}
-                style={{ width: '24px', height: '24px', borderRadius: '50%', background: color, cursor: 'pointer', border: usernameColor === color ? '2px solid #fff' : '2px solid transparent', boxSizing: 'border-box' }} />
+                style={{ width: '28px', height: '28px', borderRadius: '50%', background: color, cursor: 'pointer', border: usernameColor === color ? '3px solid #fff' : '2px solid transparent', boxSizing: 'border-box' }} />
             ))}
           </div>
-          <p style={{ fontSize: '13px', color: usernameColor, fontWeight: '700' }}>Preview: {username || 'your_username'}</p>
+          <div style={{ background: 'var(--bg-3)', borderRadius: '8px', padding: '10px 14px' }}>
+            <span style={{ fontWeight: '700', color: usernameColor, fontSize: '14px' }}>{username || 'your_username'}</span>
+            <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>:</span>
+            <span style={{ color: '#e0e0e0', fontSize: '14px' }}>This is how you'll appear in chat</span>
+          </div>
         </motion.div>
       </div>
 
