@@ -122,7 +122,14 @@ export default function TradingFloorPage({ user }) {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '12px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start'
+        }}>
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '32px', marginBottom: '12px' }}>🕯️</p>
@@ -130,14 +137,21 @@ export default function TradingFloorPage({ user }) {
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} style={{ fontSize: '14px', lineHeight: '1.6', wordBreak: 'break-word', padding: '3px 0' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px' }}>
+              <div key={msg.id} style={{
+                fontSize: '14px',
+                lineHeight: '1.6',
+                wordBreak: 'break-word',
+                padding: '2px 0',
+                textAlign: 'left',
+                width: '100%'
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '8px' }}>
                   {formatTime(msg.created_at)}
                 </span>
-                <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a', marginRight: '2px' }}>
+                <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a' }}>
                   {msg.username}
                 </span>
-                <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>:</span>
+                <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>:</span>
                 <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
               </div>
             ))
@@ -147,7 +161,7 @@ export default function TradingFloorPage({ user }) {
 
         {/* Input */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-3)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 12px', gap: '8px' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 12px', gap: '6px' }}>
             <span style={{ color: usernameColor, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
             <span style={{ color: 'var(--text-muted)' }}>:</span>
             <input
