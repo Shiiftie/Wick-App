@@ -3,17 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './supabase'
 import Navbar from './components/Navbar'
 import CandleBackground from './components/CandleBackground'
-import DashboardPage from './pages/DashboardPage'
+import HomePage from './pages/HomePage'
 import LogSessionPage from './pages/LogSessionPage'
-import HistoryPage from './pages/HistoryPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ProfilePage from './pages/ProfilePage'
-import TradingFloorPage from './pages/TradingFloorPage'
 import BadgesPage from './pages/BadgesPage'
 import DMPage from './pages/DMPage'
 import FriendsPage from './pages/FriendsPage'
 import GoalTrackerPage from './pages/GoalTrackerPage'
 import TradingRulesPage from './pages/TradingRulesPage'
+import TradingFloorPage from './pages/TradingFloorPage'
 import { Zap, CheckCircle } from 'lucide-react'
 
 function AuthPage() {
@@ -43,14 +42,13 @@ function AuthPage() {
     border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '10px', color: '#fff', fontSize: '15px',
     outline: 'none', boxSizing: 'border-box',
-    fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s'
+    fontFamily: 'Inter, sans-serif'
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
       <CandleBackground />
       <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
-
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         style={{ width: '100%', maxWidth: '420px', padding: '0 24px', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
@@ -62,18 +60,16 @@ function AuthPage() {
             Trade. Reflect. Improve.
           </motion.p>
         </div>
-
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '20px', padding: '32px' }}>
           <div style={{ display: 'flex', background: 'var(--bg-3)', borderRadius: '10px', padding: '4px', marginBottom: '28px' }}>
             {['login', 'signup'].map((m) => (
               <motion.button key={m} onClick={() => setMode(m)}
-                style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: mode === m ? 'var(--bg-2)' : 'transparent', color: mode === m ? 'var(--text)' : 'var(--text-muted)', fontSize: '14px', fontWeight: mode === m ? '600' : '400', cursor: 'pointer', boxShadow: mode === m ? '0 1px 4px rgba(0,0,0,0.3)' : 'none', transition: 'all 0.2s' }}>
+                style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: mode === m ? 'var(--bg-2)' : 'transparent', color: mode === m ? 'var(--text)' : 'var(--text-muted)', fontSize: '14px', fontWeight: mode === m ? '600' : '400', cursor: 'pointer', transition: 'all 0.2s' }}>
                 {m === 'login' ? 'Log In' : 'Sign Up'}
               </motion.button>
             ))}
           </div>
-
           <AnimatePresence>
             {error && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -82,7 +78,6 @@ function AuthPage() {
               </motion.div>
             )}
           </AnimatePresence>
-
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '16px' }}>
               <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required />
@@ -96,7 +91,6 @@ function AuthPage() {
             </motion.button>
           </form>
         </motion.div>
-
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginTop: '24px', marginBottom: '40px' }}>
           The trading journal built for serious traders.
         </p>
@@ -142,7 +136,6 @@ function PaywallPage({ user }) {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
       <CandleBackground />
       <div style={{ position: 'fixed', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
-
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
         style={{ width: '100%', maxWidth: '480px', padding: '24px', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -150,10 +143,8 @@ function PaywallPage({ user }) {
           <h1 style={{ fontSize: '36px', fontWeight: '900', letterSpacing: '-1px', marginBottom: '8px' }}>Start Trading Smarter</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Join traders who log, reflect, and improve every session.</p>
         </div>
-
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          style={{ background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(232,200,74,0.08) 0%, transparent 70%)', transform: 'translate(30px, -30px)' }} />
+          style={{ background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
             <span style={{ fontSize: '48px', fontWeight: '900', color: 'var(--gold)', letterSpacing: '-2px' }}>$9.99</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '15px' }}>/month</span>
@@ -174,7 +165,6 @@ function PaywallPage({ user }) {
           </motion.button>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>Cancel anytime. No hidden fees.</p>
         </motion.div>
-
         <motion.button whileHover={{ opacity: 0.7 }} onClick={() => supabase.auth.signOut()}
           style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', padding: '8px' }}>
           Sign out
@@ -184,8 +174,8 @@ function PaywallPage({ user }) {
   )
 }
 
-function AppShell({ user, isSubscribed }) {
-  const [view, setView] = useState('dashboard')
+function AppShell({ user }) {
+  const [view, setView] = useState('home')
   const [sessions, setSessions] = useState([])
   const [xp, setXp] = useState(0)
   const [dmRecipient, setDmRecipient] = useState(null)
@@ -200,10 +190,7 @@ function AppShell({ user, isSubscribed }) {
     if (data) setXp(data.xp || 0)
   }
 
-  useEffect(() => {
-    fetchSessions()
-    fetchXp()
-  }, [])
+  useEffect(() => { fetchSessions(); fetchXp() }, [])
 
   const handleLogout = async () => { await supabase.auth.signOut() }
 
@@ -212,8 +199,10 @@ function AppShell({ user, isSubscribed }) {
     setView('dm')
   }
 
+  const handleSessionSaved = () => { fetchSessions(); fetchXp() }
+
   const pageVariants = {
-    initial: { opacity: 0, y: 16 },
+    initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -8 }
   }
@@ -223,20 +212,19 @@ function AppShell({ user, isSubscribed }) {
       <CandleBackground />
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
-        <main style={{ paddingTop: '64px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 32px' }}>
+        <main style={{ paddingTop: '60px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
             <AnimatePresence mode="wait">
-              <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.25 }}>
-                {view === 'dashboard' && <DashboardPage sessions={sessions} setView={setView} />}
-                {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { fetchSessions(); fetchXp(); setView('dashboard') }} />}
-                {view === 'history' && <HistoryPage sessions={sessions} />}
+              <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
+                {view === 'home' && <HomePage user={user} sessions={sessions} onSessionSaved={handleSessionSaved} xp={xp} />}
+                {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { handleSessionSaved(); setView('home') }} />}
                 {view === 'leaderboard' && <LeaderboardPage />}
-                {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
+                {view === 'profile' && <ProfilePage user={user} />}
                 {view === 'badges' && <BadgesPage user={user} xp={xp} />}
                 {view === 'friends' && <FriendsPage user={user} onStartDM={handleStartDM} />}
                 {view === 'goal' && <GoalTrackerPage user={user} sessions={sessions} />}
                 {view === 'rules' && <TradingRulesPage user={user} />}
-                {view === 'profile' && <ProfilePage user={user} />}
+                {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
                 {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
               </motion.div>
             </AnimatePresence>
@@ -256,7 +244,6 @@ export default function App() {
     const checkUser = async (sessionUser) => {
       if (!sessionUser) { setUser(null); setLoading(false); return }
       setUser(sessionUser)
-
       const params = new URLSearchParams(window.location.search)
       if (params.get('subscription') === 'success') {
         await supabase.from('profiles').upsert({ id: sessionUser.id, is_subscribed: true })
@@ -264,33 +251,23 @@ export default function App() {
         setLoading(false)
         return
       }
-
       const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', sessionUser.id).single()
       setIsSubscribed(data?.is_subscribed || false)
       setLoading(false)
     }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      checkUser(session?.user ?? null)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      checkUser(session?.user ?? null)
-    })
-
+    supabase.auth.getSession().then(({ data: { session } }) => checkUser(session?.user ?? null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => checkUser(session?.user ?? null))
     return () => subscription.unsubscribe()
   }, [])
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
-        style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: '800', letterSpacing: '-1px' }}>
-        Wick
-      </motion.div>
+        style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: '800', letterSpacing: '-1px' }}>Wick</motion.div>
     </div>
   )
 
   if (!user) return <AuthPage />
   if (!isSubscribed) return <PaywallPage user={user} />
-  return <AppShell user={user} isSubscribed={isSubscribed} />
+  return <AppShell user={user} />
 }
