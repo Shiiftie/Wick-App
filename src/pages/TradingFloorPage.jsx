@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { supabase } from '../supabase'
 import { Send } from 'lucide-react'
 
@@ -79,8 +79,8 @@ export default function TradingFloorPage({ user }) {
 
   const formatTime = (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-  const getAvatarColor = (name) => {
-    const colors = ['#7c5cfc', '#e8c84a', '#00ff88', '#ff4466', '#00c8ff', '#ff8c00', '#ff69b4']
+  const getColor = (name) => {
+    const colors = ['#7c5cfc', '#e8c84a', '#00ff88', '#ff4466', '#00c8ff', '#ff8c00', '#ff69b4', '#00bcd4', '#9c27b0']
     let hash = 0
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
     return colors[Math.abs(hash) % colors.length]
@@ -101,56 +101,43 @@ export default function TradingFloorPage({ user }) {
 
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '600px' }}>
         {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-3)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-3)' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
-          <span style={{ fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)' }}>The Trading Floor</span>
+          <span style={{ fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)' }}>The Trading Floor</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: 'auto' }}>{messages.length} messages today</span>
         </div>
 
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Messages — Twitch style */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '32px', marginBottom: '12px' }}>🕯️</p>
               <p style={{ fontSize: '15px' }}>The floor is quiet. Be the first to share.</p>
             </div>
           ) : (
-            <AnimatePresence>
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}
-                >
-                  <div style={{
-                    width: '34px', height: '34px', borderRadius: '50%',
-                    background: getAvatarColor(msg.username),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '13px', fontWeight: '800', color: '#000', flexShrink: 0
-                  }}>
-                    {msg.username?.[0]?.toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                      <span style={{ fontWeight: '700', fontSize: '13px', color: msg.user_id === user.id ? 'var(--gold)' : 'var(--text)' }}>
-                        {msg.username}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{formatTime(msg.created_at)}</span>
-                    </div>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '14px', lineHeight: '1.5', wordBreak: 'break-word' }}>
-                      {msg.content}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            messages.map((msg) => (
+              <div key={msg.id} style={{ fontSize: '14px', lineHeight: '1.6', wordBreak: 'break-word', padding: '2px 0' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px' }}>
+                  {formatTime(msg.created_at)}
+                </span>
+                <span style={{
+                  fontWeight: '700',
+                  color: getColor(msg.username),
+                  marginRight: '4px'
+                }}>
+                  {msg.username}:
+                </span>
+                <span style={{ color: 'var(--text-dim)' }}>
+                  {msg.content}
+                </span>
+              </div>
+            ))
           )}
           <div ref={bottomRef} />
         </div>
 
         {/* Input */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-3)', display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-3)', display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="text"
             value={input}
@@ -158,16 +145,16 @@ export default function TradingFloorPage({ user }) {
             onKeyDown={handleKeyDown}
             placeholder="Share your analysis, setups, thoughts..."
             maxLength={500}
-            style={{ flex: 1, padding: '12px 16px', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+            style={{ flex: 1, padding: '10px 14px', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
           />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            style={{ width: '44px', height: '44px', background: input.trim() ? 'var(--gold)' : 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}
+            style={{ width: '40px', height: '40px', background: input.trim() ? 'var(--gold)' : 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}
           >
-            <Send size={16} color={input.trim() ? '#000' : 'var(--text-muted)'} />
+            <Send size={15} color={input.trim() ? '#000' : 'var(--text-muted)'} />
           </motion.button>
         </div>
       </div>
