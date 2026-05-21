@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: 'http://localhost:5175?subscription=success',
-      cancel_url: 'http://localhost:5175?subscription=cancelled',
+      success_url: 'https://app.thewickapp.com?subscription=success',
+      cancel_url: 'https://app.thewickapp.com?subscription=cancelled',
       metadata: { user_id },
     })
 

@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage'
 import LogSessionPage from './pages/LogSessionPage'
 import HistoryPage from './pages/HistoryPage'
 import LeaderboardPage from './pages/LeaderboardPage'
+import TradingFloorPage from './pages/TradingFloorPage'
 import ProfilePage from './pages/ProfilePage'
 
 function AuthPage() {
@@ -260,7 +261,9 @@ function AppShell({ user }) {
               {view === 'dashboard' && <DashboardPage sessions={sessions} setView={setView} />}
               {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { fetchSessions(); setView('dashboard') }} />}
               {view === 'history' && <HistoryPage sessions={sessions} />}
-              {view === 'leaderboard' && <LeaderboardPage />}
+          
+          {view === 'leaderboard' && <LeaderboardPage />}
+             {view === 'floor' && <TradingFloorPage user={user} />}
               {view === 'profile' && <ProfilePage user={user} />}
             </motion.div>
           </AnimatePresence>

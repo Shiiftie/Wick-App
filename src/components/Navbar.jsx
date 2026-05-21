@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
-import { LayoutDashboard, PenLine, Clock, Trophy, User, LogOut } from 'lucide-react'
+import { LayoutDashboard, PenLine, Clock, Trophy, User, LogOut, MessageSquare } from 'lucide-react'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'log', label: 'Log Session', icon: PenLine },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+  { id: 'floor', label: 'Trading Floor', icon: MessageSquare },
   { id: 'profile', label: 'Profile', icon: User },
 ]
 
@@ -76,20 +77,6 @@ export default function Navbar({ view, setView, user, onLogout }) {
               >
                 <Icon size={14} />
                 {label}
-                {active && (
-                  <motion.div
-                    layoutId="activeNav"
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: '2px',
-                      background: 'var(--gold)',
-                      borderRadius: '2px 2px 0 0'
-                    }}
-                  />
-                )}
               </motion.button>
             )
           })}
