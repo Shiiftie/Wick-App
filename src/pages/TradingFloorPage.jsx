@@ -137,15 +137,13 @@ export default function TradingFloorPage({ user, onStartDM }) {
       </div>
 
       <div style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '680px' }}>
-        {/* Header */}
         <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
           <span style={{ fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)' }}>The Trading Floor</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: 'auto' }}>{messages.length} messages today</span>
         </div>
 
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column' }}>
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '32px', marginBottom: '12px' }}>🕯️</p>
@@ -153,29 +151,25 @@ export default function TradingFloorPage({ user, onStartDM }) {
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                {/* Avatar */}
+              <div key={msg.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '2px 0' }}>
                 <div
                   onClick={() => msg.user_id !== user.id && setSelectedUserId(msg.user_id)}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: '#fff', cursor: msg.user_id !== user.id ? 'pointer' : 'default', border: `1px solid ${userColors[msg.user_id] || '#e8c84a'}30` }}>
+                  style={{ width: '24px', height: '24px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff', cursor: msg.user_id !== user.id ? 'pointer' : 'default', marginTop: '2px' }}>
                   {userAvatars[msg.user_id] ? (
                     <img src={userAvatars[msg.user_id]} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     msg.username?.[0]?.toUpperCase()
                   )}
                 </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '2px' }}>
-                    <span
-                      onClick={() => msg.user_id !== user.id && setSelectedUserId(msg.user_id)}
-                      style={{ fontWeight: '700', fontSize: '13px', color: userColors[msg.user_id] || '#e8c84a', cursor: msg.user_id !== user.id ? 'pointer' : 'default', textDecoration: msg.user_id !== user.id ? 'underline' : 'none', textUnderlineOffset: '2px' }}>
-                      {msg.username}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{formatTime(msg.created_at)}</span>
-                  </div>
-                  <p style={{ fontSize: '14px', color: '#e0e0e0', lineHeight: '1.5', wordBreak: 'break-word' }}>{msg.content}</p>
+                <div style={{ flex: 1, fontSize: '14px', lineHeight: '1.6', wordBreak: 'break-word' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px' }}>{formatTime(msg.created_at)}</span>
+                  <span
+                    onClick={() => msg.user_id !== user.id && setSelectedUserId(msg.user_id)}
+                    style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a', cursor: msg.user_id !== user.id ? 'pointer' : 'default', marginRight: '2px' }}>
+                    {msg.username}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>:</span>
+                  <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
                 </div>
               </div>
             ))
@@ -183,7 +177,6 @@ export default function TradingFloorPage({ user, onStartDM }) {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '10px', alignItems: 'center' }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 12px', gap: '6px' }}>
             <span style={{ color: usernameColor, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
