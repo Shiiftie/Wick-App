@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage'
 import TradingFloorPage from './pages/TradingFloorPage'
 import BadgesPage from './pages/BadgesPage'
 import DMPage from './pages/DMPage'
+import FriendsPage from './pages/FriendsPage'
 import { Zap, CheckCircle } from 'lucide-react'
 
 function AuthPage() {
@@ -221,8 +222,9 @@ function AppShell({ user, isSubscribed }) {
               {view === 'leaderboard' && <LeaderboardPage />}
               {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
               {view === 'badges' && <BadgesPage user={user} xp={xp} />}
+              {view === 'friends' && <FriendsPage user={user} onStartDM={handleStartDM} />}
               {view === 'profile' && <ProfilePage user={user} />}
-              {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('floor')} />}
+              {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
             </motion.div>
           </AnimatePresence>
         </div>
