@@ -5,6 +5,7 @@ import Navbar from './components/Navbar'
 import CandleBackground from './components/CandleBackground'
 import HomePage from './pages/HomePage'
 import ChartsPage from './pages/ChartsPage'
+import NewsPage from './pages/NewsPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ProfilePage from './pages/ProfilePage'
 import BadgesPage from './pages/BadgesPage'
@@ -129,6 +130,7 @@ function PaywallPage({ user }) {
     'Live Trading Floor community chat',
     'Weekly and monthly leaderboards',
     'Live TradingView charts',
+    'Economic calendar & news',
     'Priority support',
   ]
 
@@ -201,6 +203,8 @@ function AppShell({ user }) {
 
   const handleSessionSaved = () => { fetchSessions(); fetchXp() }
 
+  const isFullWidth = view === 'charts' || view === 'news'
+
   const pageVariants = {
     initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
@@ -213,11 +217,12 @@ function AppShell({ user }) {
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
         <main style={{ paddingTop: '60px' }}>
-          <div style={{ maxWidth: view === 'charts' ? '100%' : '1100px', margin: '0 auto', padding: view === 'charts' ? '24px 24px' : '32px 24px' }}>
+          <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: '24px' }}>
             <AnimatePresence mode="wait">
               <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                 {view === 'home' && <HomePage user={user} sessions={sessions} onSessionSaved={handleSessionSaved} xp={xp} />}
                 {view === 'charts' && <ChartsPage />}
+                {view === 'news' && <NewsPage />}
                 {view === 'leaderboard' && <LeaderboardPage />}
                 {view === 'profile' && <ProfilePage user={user} />}
                 {view === 'badges' && <BadgesPage user={user} xp={xp} />}
