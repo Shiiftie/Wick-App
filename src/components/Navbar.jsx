@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
-import { Home, Trophy, Users, User, LogOut, MessageSquare } from 'lucide-react'
+import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2 } from 'lucide-react'
 
 const navItems = [
   { id: 'home', label: 'Home', icon: Home },
+  { id: 'charts', label: 'Charts', icon: BarChart2 },
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { id: 'floor', label: 'Trading Floor', icon: MessageSquare },
   { id: 'friends', label: 'Friends', icon: Users },
