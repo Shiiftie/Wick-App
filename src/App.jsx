@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './supabase'
 import Navbar from './components/Navbar'
+import CandleBackground from './components/CandleBackground'
 import DashboardPage from './pages/DashboardPage'
 import LogSessionPage from './pages/LogSessionPage'
 import HistoryPage from './pages/HistoryPage'
@@ -46,9 +47,12 @@ function AuthPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ width: '100%', maxWidth: '420px', padding: '0 24px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
+      <CandleBackground />
+      <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
+
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        style={{ width: '100%', maxWidth: '420px', padding: '0 24px', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
           <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             style={{ fontSize: '48px', fontWeight: '900', background: 'linear-gradient(135deg, #e8c84a, #f5e07a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-1px', padding: '8px 0', marginBottom: '8px', lineHeight: '1.1' }}>
@@ -60,7 +64,7 @@ function AuthPage() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '20px', padding: '32px' }}>
+          style={{ background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '20px', padding: '32px' }}>
           <div style={{ display: 'flex', background: 'var(--bg-3)', borderRadius: '10px', padding: '4px', marginBottom: '28px' }}>
             {['login', 'signup'].map((m) => (
               <motion.button key={m} onClick={() => setMode(m)}
@@ -135,9 +139,12 @@ function PaywallPage({ user }) {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: '480px', padding: '24px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
+      <CandleBackground />
+      <div style={{ position: 'fixed', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
+
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+        style={{ width: '100%', maxWidth: '480px', padding: '24px', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>Get Full Access</p>
           <h1 style={{ fontSize: '36px', fontWeight: '900', letterSpacing: '-1px', marginBottom: '8px' }}>Start Trading Smarter</h1>
@@ -145,7 +152,7 @@ function PaywallPage({ user }) {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          style={{ background: 'var(--bg-2)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
+          style={{ background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: '20px', padding: '32px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(232,200,74,0.08) 0%, transparent 70%)', transform: 'translate(30px, -30px)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
             <span style={{ fontSize: '48px', fontWeight: '900', color: 'var(--gold)', letterSpacing: '-2px' }}>$9.99</span>
@@ -212,27 +219,30 @@ function AppShell({ user, isSubscribed }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
-      <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
-      <main style={{ paddingTop: '64px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 32px' }}>
-          <AnimatePresence mode="wait">
-            <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.25 }}>
-              {view === 'dashboard' && <DashboardPage sessions={sessions} setView={setView} />}
-              {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { fetchSessions(); fetchXp(); setView('dashboard') }} />}
-              {view === 'history' && <HistoryPage sessions={sessions} />}
-              {view === 'leaderboard' && <LeaderboardPage />}
-              {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
-              {view === 'badges' && <BadgesPage user={user} xp={xp} />}
-              {view === 'friends' && <FriendsPage user={user} onStartDM={handleStartDM} />}
-              {view === 'goal' && <GoalTrackerPage user={user} sessions={sessions} />}
-              {view === 'rules' && <TradingRulesPage user={user} />}
-              {view === 'profile' && <ProfilePage user={user} />}
-              {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
+      <CandleBackground />
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
+        <main style={{ paddingTop: '64px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 32px' }}>
+            <AnimatePresence mode="wait">
+              <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.25 }}>
+                {view === 'dashboard' && <DashboardPage sessions={sessions} setView={setView} />}
+                {view === 'log' && <LogSessionPage user={user} onSessionSaved={() => { fetchSessions(); fetchXp(); setView('dashboard') }} />}
+                {view === 'history' && <HistoryPage sessions={sessions} />}
+                {view === 'leaderboard' && <LeaderboardPage />}
+                {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
+                {view === 'badges' && <BadgesPage user={user} xp={xp} />}
+                {view === 'friends' && <FriendsPage user={user} onStartDM={handleStartDM} />}
+                {view === 'goal' && <GoalTrackerPage user={user} sessions={sessions} />}
+                {view === 'rules' && <TradingRulesPage user={user} />}
+                {view === 'profile' && <ProfilePage user={user} />}
+                {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
