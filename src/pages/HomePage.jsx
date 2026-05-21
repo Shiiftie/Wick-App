@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
-import { CheckCircle, AlertCircle, TrendingUp, TrendingDown, Minus, Crown, Medal, Send, ChevronDown } from 'lucide-react'
+import { CheckCircle, TrendingUp, TrendingDown, Minus, Crown, Medal, Send, ChevronDown } from 'lucide-react'
 
 const RANKS = [
   { name: 'Stone Hands', min: 0, max: 499, color: '#888', icon: '🪨' },
@@ -22,7 +22,6 @@ function getRank(xp) {
   return RANKS.find(r => xp >= r.min && xp <= r.max) || RANKS[0]
 }
 
-// ── Session Log Form ──────────────────────────────────────────────────────────
 function SessionLogForm({ user, onSessionSaved }) {
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -64,6 +63,7 @@ function SessionLogForm({ user, onSessionSaved }) {
       setForm({ date: new Date().toISOString().split('T')[0], outcome: '', pnl: '', emotions: '', bias: '', analysis: '', lessons: '' })
       setExpanded(false)
       onSessionSaved()
+      setTimeout(() => setSuccess(false), 3000)
     }
     setLoading(false)
   }
@@ -86,22 +86,22 @@ function SessionLogForm({ user, onSessionSaved }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '2px' }}>Log Today's Session</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Document your trade before the details fade.</p>
         </div>
-        {success && (
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', fontSize: '13px', fontWeight: '700' }}>
-            <CheckCircle size={14} /> Session saved!
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {success && (
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', fontSize: '13px', fontWeight: '700' }}>
+              <CheckCircle size={14} /> Saved!
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Date + Outcome */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div>
             <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Date</label>
@@ -121,13 +121,11 @@ function SessionLogForm({ user, onSessionSaved }) {
           </div>
         </div>
 
-        {/* P&L */}
         <div style={{ marginBottom: '12px' }}>
           <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>P&L ($)</label>
           <input type="number" name="pnl" value={form.pnl} onChange={handleChange} placeholder="e.g. 250 or -100" style={inputStyle} />
         </div>
 
-        {/* Expand for more fields */}
         <motion.button type="button" onClick={() => setExpanded(!expanded)} whileTap={{ scale: 0.98 }}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', marginBottom: expanded ? '12px' : '0', padding: '4px 0' }}>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -172,11 +170,10 @@ function SessionLogForm({ user, onSessionSaved }) {
   )
 }
 
-// ── Sessions Feed ─────────────────────────────────────────────────────────────
 function SessionFeed({ sessions }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-      <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px', color: 'var(--text-dim)' }}>Recent Sessions</h3>
+      <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: 'var(--text-dim)' }}>Recent Sessions</h3>
       {sessions.length === 0 ? (
         <div style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '14px', padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
           No sessions yet. Log your first one above. 👆
@@ -202,14 +199,12 @@ function SessionFeed({ sessions }) {
                   {s.pnl ? `${s.pnl >= 0 ? '+' : ''}$${s.pnl}` : '—'}
                 </p>
               </div>
-
               {s.analysis && (
                 <div style={{ marginBottom: '8px' }}>
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Before</p>
                   <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: '1.5' }}>{s.analysis}</p>
                 </div>
               )}
-
               {s.lessons && (
                 <div>
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>After</p>
@@ -218,7 +213,6 @@ function SessionFeed({ sessions }) {
                   </div>
                 </div>
               )}
-
               {(s.emotions || s.bias) && (
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
                   {s.emotions && <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', background: 'var(--bg-3)', color: 'var(--text-dim)', border: '1px solid var(--border)' }}>😶 {s.emotions}</span>}
@@ -233,79 +227,166 @@ function SessionFeed({ sessions }) {
   )
 }
 
-// ── Leaderboard Sidebar ───────────────────────────────────────────────────────
+function TradingFloorSidebar({ user }) {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState('')
+  const [username, setUsername] = useState('')
+  const [usernameColor, setUsernameColor] = useState('#e8c84a')
+  const [loading, setLoading] = useState(false)
+  const [timeUntilReset, setTimeUntilReset] = useState('')
+  const [userColors, setUserColors] = useState({})
+  const bottomRef = useRef(null)
+
+  const getTimeUntilMidnight = () => {
+    const now = new Date()
+    const midnight = new Date()
+    midnight.setHours(24, 0, 0, 0)
+    const diff = midnight - now
+    const h = Math.floor(diff / 1000 / 60 / 60)
+    const m = Math.floor((diff / 1000 / 60) % 60)
+    const s = Math.floor((diff / 1000) % 60)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  useEffect(() => {
+    const timer = setInterval(() => setTimeUntilReset(getTimeUntilMidnight()), 1000)
+    setTimeUntilReset(getTimeUntilMidnight())
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('username, username_color').eq('id', user.id).single()
+      if (data) { setUsername(data.username || ''); setUsernameColor(data.username_color || '#e8c84a') }
+    }
+    fetchProfile()
+  }, [])
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const since = new Date()
+      since.setHours(0, 0, 0, 0)
+      const { data } = await supabase.from('messages').select('*').gte('created_at', since.toISOString()).order('created_at', { ascending: true })
+      if (data) {
+        setMessages(data)
+        const userIds = [...new Set(data.map(m => m.user_id))]
+        const { data: profiles } = await supabase.from('profiles').select('id, username_color').in('id', userIds)
+        if (profiles) {
+          const colorMap = {}
+          profiles.forEach(p => { colorMap[p.id] = p.username_color || '#e8c84a' })
+          setUserColors(colorMap)
+        }
+      }
+    }
+    fetchMessages()
+    const channel = supabase.channel('trading-floor-sidebar')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+        setMessages(prev => [...prev, payload.new])
+        const { data } = await supabase.from('profiles').select('id, username_color').eq('id', payload.new.user_id).single()
+        if (data) setUserColors(prev => ({ ...prev, [data.id]: data.username_color || '#e8c84a' }))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return
+    if (!username) { alert('Set a username in Profile first.'); return }
+    setLoading(true)
+    const content = input.trim()
+    setInput('')
+    await supabase.from('messages').insert({ user_id: user.id, username, content })
+    setLoading(false)
+  }
+
+  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }
+  const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '520px' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)' }}>
+        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
+        <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)', flex: 1 }}>Trading Floor</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontFamily: 'monospace' }}>{timeUntilReset}</span>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column' }}>
+        {messages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: '13px' }}>🕯️ The floor is quiet.</div>
+        ) : (
+          messages.map((msg) => (
+            <div key={msg.id} style={{ fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-word', padding: '2px 0' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '10px', marginRight: '6px' }}>{formatTime(msg.created_at)}</span>
+              <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a' }}>{msg.username}</span>
+              <span style={{ color: 'var(--text-muted)', margin: '0 3px' }}>:</span>
+              <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
+            </div>
+          ))
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', gap: '6px' }}>
+          <span style={{ color: usernameColor, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>:</span>
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
+            placeholder="Share your thoughts..." maxLength={500}
+            style={{ flex: 1, padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif' }} />
+        </div>
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSend} disabled={loading || !input.trim()}
+          style={{ width: '34px', height: '34px', background: input.trim() ? 'var(--gold)' : 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+          <Send size={13} color={input.trim() ? '#000' : 'var(--text-muted)'} />
+        </motion.button>
+      </div>
+    </motion.div>
+  )
+}
+
 function LeaderboardSidebar() {
   const [leaders, setLeaders] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('profiles').select('username, xp, avatar_url, username_color').order('xp', { ascending: false }).limit(10)
+      const { data } = await supabase.from('profiles').select('username, xp, avatar_url, username_color').order('xp', { ascending: false }).limit(5)
       if (data) setLeaders(data)
       setLoading(false)
     }
     fetch()
   }, [])
 
-  const getRankIcon = (i) => {
-    if (i === 0) return <Crown size={14} color="#FFD700" />
-    if (i === 1) return <Medal size={14} color="#C0C0C0" />
-    if (i === 2) return <Medal size={14} color="#CD7F32" />
-    return <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '700' }}>#{i + 1}</span>
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Leaderboard */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px' }}>🏆</span> Top Traders
-        </h3>
-        {loading ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading...</p>
-        ) : leaders.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No traders yet.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {leaders.map((l, i) => {
-              const rank = getRank(l.xp || 0)
-              return (
-                <div key={l.username} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderRadius: '10px', background: i === 0 ? 'rgba(255,215,0,0.05)' : 'transparent' }}>
-                  <div style={{ width: '20px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>{getRankIcon(i)}</div>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, var(--purple), var(--gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff' }}>
-                    {l.avatar_url ? <img src={l.avatar_url} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : l.username?.[0]?.toUpperCase()}
-                  </div>
-                  <span style={{ flex: 1, fontSize: '13px', fontWeight: '600', color: l.username_color || 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.username}</span>
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--gold)', flexShrink: 0 }}>{(l.xp || 0).toLocaleString()} XP</span>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
+      <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)' }}>
+        🏆 Top Traders
+      </h3>
+      {loading ? <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Loading...</p> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {leaders.map((l, i) => {
+            const rank = getRank(l.xp || 0)
+            const icons = ['🥇', '🥈', '🥉', '4', '5']
+            return (
+              <div key={l.username} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: i < 3 ? '14px' : '11px', width: '18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700' }}>{icons[i]}</span>
+                <div style={{ width: '26px', height: '26px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
+                  {l.avatar_url ? <img src={l.avatar_url} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : l.username?.[0]?.toUpperCase()}
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </motion.div>
-
-      {/* Quick Stats */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '4px' }}>How XP Works</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '14px' }}>Every session earns XP. Consistency beats profits.</p>
-        {[
-          { label: 'Win session', xp: '+100 XP', color: 'var(--green)' },
-          { label: 'Loss session', xp: '+50 XP', color: 'var(--red)' },
-          { label: 'No trade taken', xp: '+25 XP', color: 'var(--text-muted)' },
-        ].map(item => (
-          <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-dim)' }}>{item.label}</span>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: item.color }}>{item.xp}</span>
-          </div>
-        ))}
-      </motion.div>
-    </div>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: l.username_color || 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.username}</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gold)' }}>{(l.xp || 0).toLocaleString()}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </motion.div>
   )
 }
 
-// ── Stats Bar ─────────────────────────────────────────────────────────────────
 function StatsBar({ sessions, xp }) {
   const wins = sessions.filter(s => s.outcome === 'win').length
   const losses = sessions.filter(s => s.outcome === 'loss').length
@@ -325,25 +406,25 @@ function StatsBar({ sessions, xp }) {
       ].map((stat) => (
         <div key={stat.label} style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', textAlign: 'center' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{stat.label}</p>
-          <p style={{ fontSize: '16px', fontWeight: '800', color: stat.color || 'var(--text)', letterSpacing: '-0.3px' }}>{stat.value}</p>
+          <p style={{ fontSize: '15px', fontWeight: '800', color: stat.color || 'var(--text)', letterSpacing: '-0.3px' }}>{stat.value}</p>
         </div>
       ))}
     </motion.div>
   )
 }
 
-// ── Main Home Page ────────────────────────────────────────────────────────────
 export default function HomePage({ user, sessions, onSessionSaved, xp }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <StatsBar sessions={sessions} xp={xp} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
         <div>
           <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
           <SessionFeed sessions={sessions} />
         </div>
-        <div style={{ position: 'sticky', top: '80px' }}>
+        <div style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <LeaderboardSidebar />
+          <TradingFloorSidebar user={user} />
         </div>
       </div>
     </motion.div>
