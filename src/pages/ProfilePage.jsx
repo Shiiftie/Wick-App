@@ -16,18 +16,21 @@ export default function ProfilePage({ user }) {
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [subscribed, setSubscribed] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('subscription') === 'success') setSubscribed(true)
-
     const fetchProfile = async () => {
-      const { data } = await supabase.from('profiles').select('username, xp, username_color, bio, avatar_url').eq('id', user.id).single()
+      setFetching(true)
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, xp, username_color, bio, avatar_url')
+        .eq('id', user.id)
+        .single()
+
       if (data) {
         setUsername(data.username || '')
         setXp(data.xp || 0)
@@ -35,27 +38,25 @@ export default function ProfilePage({ user }) {
         setBio(data.bio || '')
         setAvatarUrl(data.avatar_url || null)
       }
+      setFetching(false)
     }
     fetchProfile()
-  }, [])
+  }, [user.id])
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
     setError('')
-
     const fileExt = file.name.split('.').pop()
     const filePath = `${user.id}/avatar.${fileExt}`
-
     const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true })
-
     if (uploadError) {
       setError(uploadError.message)
     } else {
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
       const url = `${data.publicUrl}?t=${Date.now()}`
-      await supabase.from('profiles').upsert({ id: user.id, avatar_url: url })
+      await supabase.from('profiles').upsert({ id: user.id, avatar_url: url }, { onConflict: 'id' })
       setAvatarUrl(url)
     }
     setUploading(false)
@@ -65,9 +66,22 @@ export default function ProfilePage({ user }) {
     setLoading(true)
     setError('')
     setSuccess(false)
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, username, username_color: usernameColor, bio })
-    if (error) setError(error.message)
-    else setSuccess(true)
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        username: username.trim(),
+        username_color: usernameColor,
+        bio: bio.trim()
+      }, { onConflict: 'id' })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    }
     setLoading(false)
   }
 
@@ -92,27 +106,23 @@ export default function ProfilePage({ user }) {
   const xpLevel = Math.floor(xp / 500) + 1
   const xpProgress = (xp % 500) / 500 * 100
 
+  if (fetching) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px', color: 'var(--text-muted)' }}>
+      Loading profile...
+    </div>
+  )
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '6px' }}>Profile</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Manage your account and subscription.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Manage your account and appearance.</p>
       </div>
-
-      <AnimatePresence>
-        {subscribed && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CheckCircle size={18} color="var(--green)" />
-            <span style={{ color: 'var(--green)', fontWeight: '600' }}>🎉 Welcome to Wick Pro! You're all set.</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Avatar + Bio Row */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '16px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-        
+        style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '16px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+
         {/* Avatar */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{ width: '88px', height: '88px', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-3)', border: '2px solid var(--border)', cursor: 'pointer' }}
@@ -120,8 +130,8 @@ export default function ProfilePage({ user }) {
             {avatarUrl ? (
               <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, var(--purple), var(--gold))` }}>
-                <span style={{ fontSize: '28px', fontWeight: '900', color: '#fff' }}>{username?.[0]?.toUpperCase() || '?'}</span>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, var(--purple), var(--gold))' }}>
+                <span style={{ fontSize: '28px', fontWeight: '900', color: '#fff' }}>{username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}</span>
               </div>
             )}
           </div>
@@ -137,13 +147,24 @@ export default function ProfilePage({ user }) {
         <div style={{ flex: 1 }}>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Username</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username"
-              style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Choose a username"
+              style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+            />
           </div>
           <div>
             <label style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Bio</label>
-            <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell other traders about yourself..." rows={3} maxLength={200}
-              style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif' }} />
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell other traders about yourself..."
+              rows={3}
+              maxLength={200}
+              style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif' }}
+            />
             <p style={{ color: 'var(--text-muted)', fontSize: '11px', textAlign: 'right' }}>{bio.length}/200</p>
           </div>
         </div>
@@ -152,7 +173,7 @@ export default function ProfilePage({ user }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         {/* XP Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '120px', height: '120px', background: 'radial-gradient(circle, rgba(232,200,74,0.1) 0%, transparent 70%)', transform: 'translate(20px, -20px)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{ width: '36px', height: '36px', background: 'rgba(232,200,74,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -171,7 +192,7 @@ export default function ProfilePage({ user }) {
 
         {/* Chat Color Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
+          style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{ width: '36px', height: '36px', background: 'rgba(124,92,252,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <User size={18} color="var(--purple)" />
@@ -205,7 +226,7 @@ export default function ProfilePage({ user }) {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <CheckCircle size={16} color="var(--green)" />
-            <span style={{ color: 'var(--green)', fontSize: '14px' }}>Profile saved!</span>
+            <span style={{ color: 'var(--green)', fontSize: '14px' }}>Profile saved successfully!</span>
           </motion.div>
         )}
       </AnimatePresence>
