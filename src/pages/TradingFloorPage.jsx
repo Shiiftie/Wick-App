@@ -4,7 +4,7 @@ import { supabase } from '../supabase'
 import { Send } from 'lucide-react'
 import UserProfileModal from '../components/UserProfileModal'
 
-export default function TradingFloorPage({ user }) {
+export default function TradingFloorPage({ user, onStartDM }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [username, setUsername] = useState('')
@@ -103,8 +103,8 @@ export default function TradingFloorPage({ user }) {
   const formatTime = (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   const handleStartDM = (profile) => {
-    // Will implement DM page next
-    alert(`DM feature coming soon! You selected ${profile.username}`)
+    setSelectedUserId(null)
+    onStartDM(profile)
   }
 
   return (
@@ -185,8 +185,7 @@ export default function TradingFloorPage({ user }) {
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={handleSend} disabled={loading || !input.trim()}
-            style={{ width: '40px', height: '40px', background: input.trim() ? 'var(--gold)' : 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}
-          >
+            style={{ width: '40px', height: '40px', background: input.trim() ? 'var(--gold)' : 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
             <Send size={15} color={input.trim() ? '#000' : 'var(--text-muted)'} />
           </motion.button>
         </div>
