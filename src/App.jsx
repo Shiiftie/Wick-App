@@ -11,6 +11,8 @@ import TradingFloorPage from './pages/TradingFloorPage'
 import BadgesPage from './pages/BadgesPage'
 import DMPage from './pages/DMPage'
 import FriendsPage from './pages/FriendsPage'
+import GoalTrackerPage from './pages/GoalTrackerPage'
+import TradingRulesPage from './pages/TradingRulesPage'
 import { Zap, CheckCircle } from 'lucide-react'
 
 function AuthPage() {
@@ -223,6 +225,8 @@ function AppShell({ user, isSubscribed }) {
               {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
               {view === 'badges' && <BadgesPage user={user} xp={xp} />}
               {view === 'friends' && <FriendsPage user={user} onStartDM={handleStartDM} />}
+              {view === 'goal' && <GoalTrackerPage user={user} sessions={sessions} />}
+              {view === 'rules' && <TradingRulesPage user={user} />}
               {view === 'profile' && <ProfilePage user={user} />}
               {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
             </motion.div>
