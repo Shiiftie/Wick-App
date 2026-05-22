@@ -116,22 +116,22 @@ function PnlOverlay({ positions, price, decimals, chartHeight }) {
           <div key={pos.id}>
             {/* Entry dashed line */}
             <div style={{ position: 'absolute', top: `${entryY}px`, left: 0, right: 0, height: '1px', background: `repeating-linear-gradient(90deg, rgba(232,200,74,0.6) 0px, rgba(232,200,74,0.6) 6px, transparent 6px, transparent 12px)` }} />
-            <div style={{ position: 'absolute', top: `${entryY - 11}px`, left: '10px', background: 'rgba(232,200,74,0.9)', color: '#000', fontSize: '9px', fontWeight: '800', padding: '2px 7px', borderRadius: '3px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', top: `${entryY - 11}px`, left: '10px', background: 'rgba(232,200,74,0.92)', color: '#000', fontSize: '9px', fontWeight: '800', padding: '2px 7px', borderRadius: '3px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
               {pos.direction.toUpperCase()} @ {pos.entry.toFixed(decimals)}
             </div>
 
-            {/* Current price tracking line */}
+            {/* Tracking price line */}
             <motion.div
               animate={{ top: `${currentY}px` }}
               transition={{ type: 'spring', stiffness: 100, damping: 18 }}
               style={{ position: 'absolute', left: 0, right: 0, height: '2px', background: `repeating-linear-gradient(90deg, ${color} 0px, ${color} 8px, transparent 8px, transparent 14px)`, boxShadow: `0 0 8px ${color}50` }}
             />
 
-            {/* P&L label tracking with price */}
+            {/* P&L label */}
             <motion.div
               animate={{ top: `${currentY - 16}px` }}
               transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-              style={{ position: 'absolute', right: '72px', background: profit ? 'rgba(0,15,8,0.95)' : 'rgba(15,0,5,0.95)', border: `1px solid ${color}`, color, fontSize: '14px', fontWeight: '900', padding: '3px 14px', borderRadius: '5px', fontFamily: 'monospace', whiteSpace: 'nowrap', boxShadow: `0 0 14px ${color}35`, letterSpacing: '0.5px' }}>
+              style={{ position: 'absolute', right: '16px', background: profit ? 'rgba(0,15,8,0.95)' : 'rgba(15,0,5,0.95)', border: `1px solid ${color}`, color, fontSize: '14px', fontWeight: '900', padding: '3px 14px', borderRadius: '5px', fontFamily: 'monospace', whiteSpace: 'nowrap', boxShadow: `0 0 14px ${color}35` }}>
               {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
             </motion.div>
           </div>
@@ -209,8 +209,6 @@ export default function SimulatorPage({ user }) {
     setLoggedIds(s => new Set([...s, trade.id]))
   }
 
-  const inputStyle = { padding: '6px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#e0e0e0', fontSize: '13px', fontWeight: '700', outline: 'none', fontFamily: 'monospace', width: '90px' }
-
   // ── BALANCE PICKER ─────────────────────────────────────────────
   if (!startingBalance) {
     return (
@@ -248,7 +246,7 @@ export default function SimulatorPage({ user }) {
         )}
       </AnimatePresence>
 
-      {/* ── ROW 1: Balance + Stats bar ── */}
+      {/* ── TOP BAR: Balance + Stats ── */}
       <div style={{ height: '40px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', flexShrink: 0, background: '#0d0d0d' }}>
         <div style={{ display: 'flex', height: '100%', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           {BALANCE_OPTIONS.map(b => (
@@ -274,109 +272,159 @@ export default function SimulatorPage({ user }) {
           <motion.span key={price} animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e0e0e0' }} transition={{ duration: 0.2 }} style={{ fontSize: '14px', fontWeight: '800' }}>{price.toFixed(decimals)}</motion.span>
           {priceDir === 'up' ? <TrendingUp size={11} color="#00ff88" /> : priceDir === 'down' ? <TrendingDown size={11} color="#ff4466" /> : null}
         </div>
-        <button onClick={() => setShowHistory(!showHistory)} style={{ marginLeft: 'auto', padding: '0 16px', height: '100%', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.06)', color: showHistory ? '#e8c84a' : 'rgba(255,255,255,0.25)', fontSize: '10px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
+        <button onClick={() => setShowHistory(!showHistory)}
+          style={{ marginLeft: 'auto', padding: '0 16px', height: '100%', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.06)', color: showHistory ? '#e8c84a' : 'rgba(255,255,255,0.25)', fontSize: '10px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
           HISTORY {history.length > 0 && `(${history.length})`}
         </button>
       </div>
 
-      {/* ── ROW 2: Asset selector + Order bar (horizontal, full width) ── */}
-      <div style={{ height: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '0', flexShrink: 0, background: '#0a0a0a', overflowX: 'auto' }}>
-
-        {/* Category tabs */}
+      {/* ── ASSET SELECTOR BAR ── */}
+      <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '0', flexShrink: 0, background: '#0a0a0a', overflowX: 'auto' }}>
         <div style={{ display: 'flex', height: '100%', borderRight: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           {Object.keys(ASSETS).map(cat => (
             <button key={cat} onClick={() => { setCategory(cat); setAsset(ASSETS[cat][0]) }}
-              style={{ padding: '0 14px', height: '100%', background: 'transparent', border: 'none', borderBottom: category === cat ? '2px solid #e8c84a' : '2px solid transparent', color: category === cat ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase' }}>
+              style={{ padding: '0 16px', height: '100%', background: 'transparent', border: 'none', borderBottom: category === cat ? '2px solid #e8c84a' : '2px solid transparent', color: category === cat ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase' }}>
               {cat === 'stocks' ? 'Equities' : cat === 'forex' ? 'Forex' : 'Crypto'}
             </button>
           ))}
         </div>
-
-        {/* Asset pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 12px', borderRight: '1px solid rgba(255,255,255,0.06)', height: '100%', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px' }}>
           {ASSETS[category].map(a => (
             <button key={a.symbol} onClick={() => setAsset(a)}
-              style={{ padding: '5px 12px', borderRadius: '6px', border: `1px solid ${asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.08)'}`, background: asset.symbol === a.symbol ? 'rgba(232,200,74,0.12)' : 'transparent', color: asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+              style={{ padding: '5px 14px', borderRadius: '6px', border: `1px solid ${asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.08)'}`, background: asset.symbol === a.symbol ? 'rgba(232,200,74,0.12)' : 'transparent', color: asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
               {a.label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Order controls — horizontal */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 14px', flex: 1 }}>
-          {/* Long / Short */}
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {['long', 'short'].map(d => (
-              <motion.button key={d} whileTap={{ scale: 0.96 }} onClick={() => setDirection(d)}
-                style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)') : 'transparent', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {d === 'long' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                {d.toUpperCase()}
-              </motion.button>
-            ))}
+      {/* ── MAIN: Chart + Right Sidebar ── */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 200px', overflow: 'hidden', minHeight: 0 }}>
+
+        {/* Chart */}
+        <div ref={chartRef} style={{ position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+          <TradingViewChart symbol={asset.symbol} />
+          <PnlOverlay positions={positions} price={price} decimals={decimals} chartHeight={chartHeight} />
+        </div>
+
+        {/* ── RIGHT SIDEBAR ── */}
+        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', background: '#0a0a0a', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+          {/* Order Entry */}
+          <div style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '10px' }}>ORDER ENTRY</p>
+
+            {/* Long / Short */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
+              {['long', 'short'].map(d => (
+                <motion.button key={d} whileTap={{ scale: 0.96 }} onClick={() => setDirection(d)}
+                  style={{ padding: '10px 0', borderRadius: '8px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)') : 'rgba(255,255,255,0.02)', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.15s' }}>
+                  {d === 'long' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                  {d.toUpperCase()}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Size */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1.5px', display: 'block', marginBottom: '5px' }}>POSITION SIZE ($)</label>
+              <input type="number" value={size} onChange={e => setSize(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#e0e0e0', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+            </div>
+
+            {/* SL / TP */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
+              <div>
+                <label style={{ fontSize: '8px', color: '#ff6680', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>STOP LOSS</label>
+                <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="—"
+                  style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,68,102,0.04)', border: '1px solid rgba(255,68,102,0.15)', borderRadius: '6px', color: '#ff6680', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '8px', color: '#00cc6a', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>TAKE PROFIT</label>
+                <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="—"
+                  style={{ width: '100%', padding: '7px 8px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '6px', color: '#00cc6a', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+              </div>
+            </div>
+
+            {/* Market price */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>MARKET</span>
+              <motion.span key={price} animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e8c84a' }} style={{ fontSize: '14px', fontWeight: '800' }}>
+                {price.toFixed(decimals)}
+              </motion.span>
+            </div>
+
+            {/* Execute button */}
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleExecute}
+              style={{ width: '100%', padding: '13px', borderRadius: '8px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #009944, #00ff88)' : 'linear-gradient(135deg, #aa1133, #ff4466)', color: '#000', fontSize: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <Zap size={13} />
+              {direction === 'long' ? 'BUY LONG' : 'SELL SHORT'}
+            </motion.button>
           </div>
 
-          {/* Divider */}
-          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.06)' }} />
+          {/* Open Positions */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+            <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '10px' }}>
+              OPEN POSITIONS {positions.length > 0 && <span style={{ color: '#e8c84a' }}>({positions.length})</span>}
+            </p>
 
-          {/* Size */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px', whiteSpace: 'nowrap' }}>SIZE $</span>
-            <input type="number" value={size} onChange={e => setSize(e.target.value)} style={inputStyle} />
-          </div>
-
-          {/* SL */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '8px', color: '#ff6680', letterSpacing: '1px' }}>SL</span>
-            <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="—" style={{ ...inputStyle, border: '1px solid rgba(255,68,102,0.2)', color: '#ff6680', background: 'rgba(255,68,102,0.04)', width: '80px' }} />
-          </div>
-
-          {/* TP */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '8px', color: '#00cc6a', letterSpacing: '1px' }}>TP</span>
-            <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="—" style={{ ...inputStyle, border: '1px solid rgba(0,255,136,0.2)', color: '#00cc6a', background: 'rgba(0,255,136,0.04)', width: '80px' }} />
-          </div>
-
-          {/* Execute */}
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleExecute}
-            style={{ padding: '7px 20px', borderRadius: '7px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #009944, #00ff88)' : 'linear-gradient(135deg, #aa1133, #ff4466)', color: '#000', fontSize: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '1.5px', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
-            <Zap size={12} />{direction === 'long' ? 'BUY LONG' : 'SELL SHORT'}
-          </motion.button>
-
-          {/* Open positions inline */}
-          {positions.length > 0 && (
-            <>
-              <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.06)' }} />
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>OPEN</span>
+            {positions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.12)', fontSize: '11px', lineHeight: 1.7 }}>
+                No open positions.<br />Execute a trade above.
+              </div>
+            ) : (
+              <AnimatePresence>
                 {positions.map(pos => {
                   const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
                   const pnl = (diff / pos.entry) * pos.size * 1000
                   const profit = pnl >= 0
+                  const color = profit ? '#00ff88' : '#ff4466'
                   return (
-                    <motion.div key={pos.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '6px', background: profit ? 'rgba(0,255,136,0.06)' : 'rgba(255,68,102,0.06)', border: `1px solid ${profit ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,102,0.15)'}` }}>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: profit ? '#00ff88' : '#ff4466' }}>{pos.asset.label}</span>
-                      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>{pos.direction}</span>
-                      <span style={{ fontSize: '11px', fontWeight: '800', color: profit ? '#00ff88' : '#ff4466' }}>{pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleClose(pos.id)}
-                        style={{ background: 'none', border: 'none', color: 'rgba(255,68,102,0.6)', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center' }}>
-                        <X size={11} />
+                    <motion.div key={pos.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }}
+                      style={{ background: profit ? 'rgba(0,255,136,0.04)' : 'rgba(255,68,102,0.04)', border: `1px solid ${profit ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)'}`, borderRadius: '10px', padding: '12px', marginBottom: '8px' }}>
+
+                      {/* Header row */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '9px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', background: pos.direction === 'long' ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,102,0.15)', color: pos.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px' }}>
+                            {pos.direction.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#d0d0d0' }}>{pos.asset.label}</span>
+                        </div>
+                        <motion.div animate={{ color }} style={{ fontSize: '14px', fontWeight: '900' }}>
+                          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        </motion.div>
+                      </div>
+
+                      {/* Entry price */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <div>
+                          <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px', marginBottom: '2px' }}>ENTRY</div>
+                          <div style={{ fontSize: '11px', fontWeight: '700', color: '#909090', fontFamily: 'monospace' }}>{pos.entry.toFixed(decimals)}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px', marginBottom: '2px' }}>SIZE</div>
+                          <div style={{ fontSize: '11px', fontWeight: '700', color: '#909090', fontFamily: 'monospace' }}>${pos.size.toLocaleString()}</div>
+                        </div>
+                      </div>
+
+                      {/* EXIT TRADE button — full width, prominent */}
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => handleClose(pos.id)}
+                        style={{ width: '100%', padding: '9px', borderRadius: '7px', border: '1px solid rgba(255,68,102,0.4)', background: 'rgba(255,68,102,0.1)', color: '#ff4466', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,68,102,0.2)'; e.currentTarget.style.borderColor = '#ff4466' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,68,102,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,68,102,0.4)' }}>
+                        <X size={12} /> EXIT TRADE
                       </motion.button>
                     </motion.div>
                   )
                 })}
-              </div>
-            </>
-          )}
+              </AnimatePresence>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── ROW 3: Full width chart ── */}
-      <div ref={chartRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-        <TradingViewChart symbol={asset.symbol} />
-        <PnlOverlay positions={positions} price={price} decimals={decimals} chartHeight={chartHeight} />
-      </div>
-
-      {/* ── ROW 4: History (collapsible) ── */}
+      {/* ── HISTORY (collapsible) ── */}
       <AnimatePresence>
         {showHistory && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: '150px', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
@@ -404,7 +452,9 @@ export default function SimulatorPage({ user }) {
                       {history.map((t, i) => (
                         <tr key={i}>
                           <td style={{ padding: '5px 14px', color: '#c0c0c0', fontWeight: '700' }}>{t.asset.label}</td>
-                          <td style={{ padding: '5px 14px' }}><span style={{ fontSize: '9px', fontWeight: '800', padding: '1px 6px', borderRadius: '3px', background: t.direction === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)', color: t.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px' }}>{t.direction.toUpperCase()}</span></td>
+                          <td style={{ padding: '5px 14px' }}>
+                            <span style={{ fontSize: '9px', fontWeight: '800', padding: '1px 6px', borderRadius: '3px', background: t.direction === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)', color: t.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px' }}>{t.direction.toUpperCase()}</span>
+                          </td>
                           <td style={{ padding: '5px 14px', color: 'rgba(255,255,255,0.3)' }}>{t.entry.toFixed(t.asset.pip < 0.001 ? 5 : 2)}</td>
                           <td style={{ padding: '5px 14px', color: 'rgba(255,255,255,0.3)' }}>{t.closePrice?.toFixed(t.asset.pip < 0.001 ? 5 : 2)}</td>
                           <td style={{ padding: '5px 14px', fontWeight: '800', color: t.pnl >= 0 ? '#00ff88' : '#ff4466' }}>{t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}</td>
