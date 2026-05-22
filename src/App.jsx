@@ -14,6 +14,7 @@ import FriendsPage from './pages/FriendsPage'
 import GoalTrackerPage from './pages/GoalTrackerPage'
 import TradingRulesPage from './pages/TradingRulesPage'
 import TradingFloorPage from './pages/TradingFloorPage'
+import SimulatorPage from './pages/SimulatorPage'
 import { Zap, CheckCircle } from 'lucide-react'
 
 function AuthPage() {
@@ -131,6 +132,7 @@ function PaywallPage({ user, onSignOut }) {
     'Weekly and monthly leaderboards',
     'Live TradingView charts',
     'Economic calendar & news',
+    'Paper trading simulator',
     'Priority support',
   ]
 
@@ -203,7 +205,7 @@ function AppShell({ user }) {
 
   const handleSessionSaved = () => { fetchSessions(); fetchXp() }
 
-  const isFullWidth = view === 'charts' || view === 'news'
+  const isFullWidth = view === 'charts' || view === 'news' || view === 'simulator'
 
   const pageVariants = {
     initial: { opacity: 0, y: 12 },
@@ -217,7 +219,7 @@ function AppShell({ user }) {
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
         <main style={{ paddingTop: 'calc(env(safe-area-inset-top) + 88px)' }}>
-          <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: '24px' }}>
+          <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: isFullWidth ? '0' : '24px' }}>
             <AnimatePresence mode="wait">
               <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                 {view === 'home' && <HomePage user={user} sessions={sessions} onSessionSaved={handleSessionSaved} xp={xp} />}
@@ -230,6 +232,7 @@ function AppShell({ user }) {
                 {view === 'goal' && <GoalTrackerPage user={user} sessions={sessions} />}
                 {view === 'rules' && <TradingRulesPage user={user} />}
                 {view === 'floor' && <TradingFloorPage user={user} onStartDM={handleStartDM} />}
+                {view === 'simulator' && <SimulatorPage user={user} />}
                 {view === 'dm' && dmRecipient && <DMPage user={user} recipient={dmRecipient} onBack={() => setView('friends')} />}
               </motion.div>
             </AnimatePresence>
@@ -246,7 +249,6 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Failsafe: never stay stuck on the loading screen
     const timeout = setTimeout(() => setLoading(false), 5000)
 
     const checkUser = async (sessionUser) => {
