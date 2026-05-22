@@ -246,23 +246,41 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Failsafe: never stay stuck on the loading screen
+    const timeout = setTimeout(() => setLoading(false), 5000)
+
     const checkUser = async (sessionUser) => {
-      if (!sessionUser) { setUser(null); setLoading(false); return }
-      setUser(sessionUser)
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('subscription') === 'success') {
-        await supabase.from('profiles').upsert({ id: sessionUser.id, is_subscribed: true })
-        setIsSubscribed(true)
+      try {
+        if (!sessionUser) {
+          setUser(null)
+          return
+        }
+        setUser(sessionUser)
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('subscription') === 'success') {
+          await supabase.from('profiles').upsert({ id: sessionUser.id, is_subscribed: true })
+          setIsSubscribed(true)
+          return
+        }
+        const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', sessionUser.id).single()
+        setIsSubscribed(data?.is_subscribed || false)
+      } catch (err) {
+        console.error('Auth check failed:', err)
+        setUser(null)
+      } finally {
+        clearTimeout(timeout)
         setLoading(false)
-        return
       }
-      const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', sessionUser.id).single()
-      setIsSubscribed(data?.is_subscribed || false)
-      setLoading(false)
     }
+
     supabase.auth.getSession().then(({ data: { session } }) => checkUser(session?.user ?? null))
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => checkUser(session?.user ?? null))
-    return () => subscription.unsubscribe()
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   if (loading) return (
