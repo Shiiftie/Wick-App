@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2, Newspaper } from 'lucide-react'
 import { supabase } from '../supabase'
@@ -28,70 +28,68 @@ function getRank(xp) {
   return RANK_THRESHOLDS.find(r => xp >= r.min)?.name || 'Bronze'
 }
 
-function LiveTicker({ tickerItems }) {
-  const [index, setIndex] = useState(0)
+function LiveTicker({ items }) {
+  // Double the items so the scroll loops seamlessly
+  const doubled = [...items, ...items]
 
-  useEffect(() => {
-    if (tickerItems.length === 0) return
-    const interval = setInterval(() => {
-      setIndex(i => (i + 1) % tickerItems.length)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [tickerItems.length])
-
-  if (tickerItems.length === 0) return null
+  if (items.length === 0) return null
 
   return (
     <div style={{
-      height: '28px',
-      background: 'rgba(232,200,74,0.06)',
-      borderBottom: '1px solid rgba(232,200,74,0.1)',
+      position: 'relative',
+      zIndex: 101,
+      borderBottom: '1px solid rgba(232,200,74,0.12)',
+      borderTop: '1px solid rgba(232,200,74,0.06)',
+      background: 'rgba(10,10,10,0.95)',
+      overflow: 'hidden',
+      height: '30px',
       display: 'flex',
       alignItems: 'center',
-      overflow: 'hidden',
-      position: 'relative',
     }}>
-      {/* LIVE badge */}
+      {/* Left fade */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '5px',
-        padding: '0 14px', borderRight: '1px solid rgba(232,200,74,0.15)',
-        height: '100%', flexShrink: 0
-      }}>
-        <motion.div
-          animate={{ opacity: [1, 0.2, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e8c84a' }}
-        />
-        <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--gold)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Live</span>
-      </div>
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', zIndex: 2,
+        background: 'linear-gradient(to right, rgba(10,10,10,1), transparent)',
+        pointerEvents: 'none',
+      }} />
+      {/* Right fade */}
+      <div style={{
+        position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', zIndex: 2,
+        background: 'linear-gradient(to left, rgba(10,10,10,1), transparent)',
+        pointerEvents: 'none',
+      }} />
 
-      {/* Ticker message */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4 }}
-            style={{ paddingLeft: '16px', fontSize: '12px', color: 'var(--text-dim)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <span style={{ color: 'var(--gold)' }}>{tickerItems[index]?.icon}</span>
-            <span>{tickerItems[index]?.message}</span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Separator dots */}
-      <div style={{ display: 'flex', gap: '4px', paddingRight: '16px' }}>
-        {tickerItems.map((_, i) => (
+      {/* Scrolling track */}
+      <div style={{
+        display: 'flex',
+        gap: '48px',
+        animation: 'tickerScroll 40s linear infinite',
+        whiteSpace: 'nowrap',
+        willChange: 'transform',
+      }}
+        onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+        onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+      >
+        {doubled.map((item, i) => (
           <div key={i} style={{
-            width: i === index ? '16px' : '4px', height: '4px', borderRadius: '2px',
-            background: i === index ? 'var(--gold)' : 'rgba(232,200,74,0.2)',
-            transition: 'all 0.3s'
-          }} />
+            display: 'flex', alignItems: 'center', gap: '8px',
+            fontFamily: 'monospace', fontSize: '11px',
+            color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px', flexShrink: 0,
+          }}>
+            {/* Dot separator */}
+            <div style={{ width: '4px', height: '4px', background: '#e8c84a', borderRadius: '50%', opacity: 0.5, flexShrink: 0 }} />
+            <span>{item.text} </span>
+            <span style={{ color: '#e8c84a', fontWeight: '600' }}>{item.highlight}</span>
+          </div>
         ))}
       </div>
+
+      <style>{`
+        @keyframes tickerScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -100,10 +98,21 @@ export default function Navbar({ view, setView, user, onLogout }) {
   const [profile, setProfile] = useState(null)
   const [tickerItems, setTickerItems] = useState([])
 
+  // Static fallback items (same vibe as the landing page)
+  const staticItems = [
+    { text: 'RileyWicks just earned the', highlight: '7-Day Warrior badge' },
+    { text: 'GoldHunter_J reached', highlight: 'Gold Wick rank' },
+    { text: 'MarcoFX just logged their', highlight: '50th session' },
+    { text: 'AsianSesh_K earned', highlight: 'Ghost Mode badge' },
+    { text: 'FundedUp just got their', highlight: 'first Topstep payout' },
+    { text: 'ConsistentK completed', highlight: '30 days no revenge trades' },
+    { text: 'PatienceWins unlocked', highlight: 'Iron Discipline badge' },
+    { text: 'LevelUpFX climbed to', highlight: 'Silver Wick rank' },
+  ]
+
   useEffect(() => {
     if (!user) return
 
-    // Fetch current user's profile
     const fetchProfile = async () => {
       const { data } = await supabase
         .from('profiles')
@@ -113,78 +122,64 @@ export default function Navbar({ view, setView, user, onLogout }) {
       if (data) setProfile(data)
     }
 
-    // Build ticker from live Supabase data
     const fetchTickerData = async () => {
-      const items = []
+      const liveItems = [...staticItems]
 
-      // Top weekly leaderboard
-      const { data: topTraders } = await supabase
-        .from('profiles')
-        .select('username, xp')
-        .order('xp', { ascending: false })
-        .limit(3)
+      try {
+        // Top 3 leaderboard
+        const { data: topTraders } = await supabase
+          .from('profiles')
+          .select('username, xp')
+          .order('xp', { ascending: false })
+          .limit(3)
 
-      if (topTraders && topTraders.length > 0) {
-        items.push({
-          icon: '🏆',
-          message: `Weekly Leader: ${topTraders[0].username} — ${topTraders[0].xp.toLocaleString()} XP`
-        })
-        if (topTraders[1]) items.push({
-          icon: '🥈',
-          message: `#2 on the leaderboard: ${topTraders[1].username} — ${topTraders[1].xp.toLocaleString()} XP`
-        })
-        if (topTraders[2]) items.push({
-          icon: '🥉',
-          message: `#3 on the leaderboard: ${topTraders[2].username} — ${topTraders[2].xp.toLocaleString()} XP`
-        })
-      }
+        if (topTraders?.[0]) liveItems.push({ text: `${topTraders[0].username} leads the leaderboard with`, highlight: `${topTraders[0].xp.toLocaleString()} XP` })
+        if (topTraders?.[1]) liveItems.push({ text: `${topTraders[1].username} is sitting at`, highlight: `#2 on the leaderboard` })
+        if (topTraders?.[2]) liveItems.push({ text: `${topTraders[2].username} is climbing fast —`, highlight: `#3 this week` })
 
-      // Recent sessions (last 5)
-      const { data: recentSessions } = await supabase
-        .from('sessions')
-        .select('user_id, pnl, outcome, profiles(username)')
-        .order('created_at', { ascending: false })
-        .limit(5)
+        // Recent wins
+        const { data: recentWins } = await supabase
+          .from('sessions')
+          .select('pnl, profiles(username)')
+          .eq('outcome', 'win')
+          .order('created_at', { ascending: false })
+          .limit(4)
 
-      if (recentSessions) {
-        recentSessions.forEach(s => {
-          const username = s.profiles?.username
-          if (!username) return
-          if (s.outcome === 'win' && s.pnl) {
-            items.push({ icon: '📈', message: `${username} just logged a +$${s.pnl} win!` })
-          } else if (s.outcome === 'loss' && s.pnl) {
-            items.push({ icon: '📉', message: `${username} logged a session — staying disciplined.` })
+        recentWins?.forEach(s => {
+          if (s.profiles?.username && s.pnl) {
+            liveItems.push({ text: `${s.profiles.username} just logged a`, highlight: `+$${s.pnl} win` })
           }
         })
+
+        // Total user count
+        const { count } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+        if (count) liveItems.push({ text: 'Join', highlight: `${count} traders` + ' already using Wick' })
+
+      } catch (e) {
+        // Fall back to static items silently
       }
 
-      // Total user count
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-
-      if (count) {
-        items.push({ icon: '🔥', message: `${count} traders are actively using Wick` })
-      }
-
-      if (items.length > 0) setTickerItems(items)
+      setTickerItems(liveItems)
     }
 
     fetchProfile()
     fetchTickerData()
 
-    // Refresh ticker every 60 seconds
     const interval = setInterval(fetchTickerData, 60000)
     return () => clearInterval(interval)
   }, [user])
 
+  // Show static items immediately while data loads
+  const displayItems = tickerItems.length > 0 ? tickerItems : staticItems
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Trader'
   const rank = profile ? getRank(profile.xp || 0) : null
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}>
-      {/* Live Ticker */}
-      <LiveTicker tickerItems={tickerItems} />
+      {/* Live scrolling ticker */}
+      <LiveTicker items={displayItems} />
 
       {/* Main Navbar */}
       <nav style={{
@@ -255,7 +250,7 @@ export default function Navbar({ view, setView, user, onLogout }) {
           })}
         </div>
 
-        {/* Right side — user info */}
+        {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           {/* Avatar + name */}
           <motion.div
@@ -264,19 +259,16 @@ export default function Navbar({ view, setView, user, onLogout }) {
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               cursor: 'pointer', padding: '4px 8px', borderRadius: '8px',
-              transition: 'background 0.2s',
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            {/* Avatar circle */}
             <div style={{
               width: '28px', height: '28px', borderRadius: '50%',
               background: profile?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #e8c84a, #d4b030)',
               border: '1.5px solid rgba(232,200,74,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: '800', color: '#000', overflow: 'hidden',
-              flexShrink: 0
+              fontSize: '11px', fontWeight: '800', color: '#000', overflow: 'hidden', flexShrink: 0
             }}>
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
