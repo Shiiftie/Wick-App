@@ -222,7 +222,7 @@ function AppShell({ user }) {
           <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: isFullWidth ? '0' : '24px' }}>
             <AnimatePresence mode="wait">
               <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
-                {view === 'home' && <HomePage user={user} sessions={sessions} onSessionSaved={handleSessionSaved} xp={xp} />}
+                {view === 'home' && <HomePage user={user} sessions={sessions} onSessionSaved={handleSessionSaved} xp={xp} setView={setView} />}
                 {view === 'charts' && <ChartsPage />}
                 {view === 'news' && <NewsPage />}
                 {view === 'leaderboard' && <LeaderboardPage />}

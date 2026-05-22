@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
-import { CheckCircle, TrendingUp, TrendingDown, Minus, Send, ChevronDown } from 'lucide-react'
+import { CheckCircle, TrendingUp, TrendingDown, Minus, Send, ChevronDown, Shield, ArrowRight } from 'lucide-react'
 import ReportCard from '../components/ReportCard'
 
 const RANKS = [
@@ -31,6 +31,93 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', handler)
   }, [])
   return isMobile
+}
+
+// ── NON-NEGOTIABLE RULES WIDGET ─────────────────────────────────────
+function RulesWidget({ user, setView }) {
+  const [rules, setRules] = useState([])
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  useEffect(() => {
+    const fetchRules = async () => {
+      const { data } = await supabase.from('profiles').select('trading_rules').eq('id', user.id).single()
+      if (data?.trading_rules) {
+        try { setRules(JSON.parse(data.trading_rules)) } catch { setRules([]) }
+      }
+      const lastAck = localStorage.getItem(`wick_rules_ack_${user.id}`)
+      setAcknowledged(lastAck === new Date().toDateString())
+    }
+    fetchRules()
+  }, [user.id])
+
+  const handleAcknowledge = () => {
+    localStorage.setItem(`wick_rules_ack_${user.id}`, new Date().toDateString())
+    setAcknowledged(true)
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: `1px solid ${acknowledged ? 'rgba(0,255,136,0.2)' : 'rgba(232,200,74,0.2)'}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', background: acknowledged ? 'rgba(0,255,136,0.04)' : 'rgba(232,200,74,0.04)' }}>
+        <Shield size={16} color={acknowledged ? 'var(--green)' : 'var(--gold)'} />
+        <span style={{ fontWeight: '700', fontSize: '14px', flex: 1 }}>Non-Negotiable Rules</span>
+        {acknowledged && (
+          <span style={{ fontSize: '11px', color: 'var(--green)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <CheckCircle size={12} /> Acknowledged
+          </span>
+        )}
+      </div>
+
+      {rules.length === 0 ? (
+        /* No rules set — prompt to add */
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: 1.6 }}>
+            You haven't set your trading rules yet.<br />Rules keep you disciplined when emotions run high.
+          </p>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={() => setView('rules')}
+            style={{ padding: '10px 20px', background: 'rgba(232,200,74,0.1)', border: '1px solid rgba(232,200,74,0.3)', borderRadius: '8px', color: 'var(--gold)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            Set My Rules <ArrowRight size={13} />
+          </motion.button>
+        </div>
+      ) : (
+        <div style={{ padding: '16px 20px' }}>
+          {/* Rules list — show first 3, collapse rest */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+            {rules.slice(0, 4).map((rule, i) => (
+              <div key={rule.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <span style={{ color: 'var(--gold)', fontWeight: '800', fontSize: '12px', flexShrink: 0, minWidth: '18px', paddingTop: '1px' }}>{i + 1}.</span>
+                <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: '1.5', margin: 0 }}>{rule.text}</p>
+              </div>
+            ))}
+            {rules.length > 4 && (
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => setView('rules')}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', textAlign: 'left', padding: '0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                +{rules.length - 4} more rules — view all
+              </motion.button>
+            )}
+          </div>
+
+          {/* Acknowledge button or go to rules */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {!acknowledged ? (
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAcknowledge}
+                style={{ flex: 1, padding: '11px', background: 'linear-gradient(135deg, #e8c84a, #d4b030)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <CheckCircle size={14} /> I've read my rules — ready to trade
+              </motion.button>
+            ) : (
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setView('rules')}
+                style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Edit Rules <ArrowRight size={12} />
+              </motion.button>
+            )}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )
 }
 
 function SessionLogForm({ user, onSessionSaved }) {
@@ -102,7 +189,6 @@ function SessionLogForm({ user, onSessionSaved }) {
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Date + Outcome stacked on mobile */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div>
             <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Date</label>
@@ -306,7 +392,7 @@ function TradingFloorSidebar({ user }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: isMobile ? '320px' : '640px' }}>
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: isMobile ? '320px' : '540px' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)' }}>
         <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
         <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)', flex: 1 }}>Trading Floor</span>
@@ -403,17 +489,12 @@ function StatsBar({ sessions, xp }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
-        gap: '8px', marginBottom: '20px'
-      }}>
+      style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '8px', marginBottom: '20px' }}>
       {stats.map((stat, i) => (
         <div key={stat.label} style={{
           background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)',
           border: '1px solid var(--border)', borderRadius: '12px',
           padding: isMobile ? '12px 8px' : '14px 16px', textAlign: 'center',
-          // Hide rank on mobile to keep grid clean (show in 3-col)
           display: isMobile && i === 4 ? 'none' : 'block'
         }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{stat.label}</p>
@@ -424,7 +505,7 @@ function StatsBar({ sessions, xp }) {
   )
 }
 
-export default function HomePage({ user, sessions, onSessionSaved, xp }) {
+export default function HomePage({ user, sessions, onSessionSaved, xp, setView }) {
   const isMobile = useIsMobile()
 
   return (
@@ -432,8 +513,8 @@ export default function HomePage({ user, sessions, onSessionSaved, xp }) {
       <StatsBar sessions={sessions} xp={xp} />
 
       {isMobile ? (
-        // Mobile: single column layout
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '80px' }}>
+          <RulesWidget user={user} setView={setView} />
           <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
           <LeaderboardSidebar />
           <TradingFloorSidebar user={user} />
@@ -441,9 +522,9 @@ export default function HomePage({ user, sessions, onSessionSaved, xp }) {
           <SessionFeed sessions={sessions} />
         </div>
       ) : (
-        // Desktop: two-column layout
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
           <div>
+            <RulesWidget user={user} setView={setView} />
             <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
             <ReportCard user={user} />
             <div style={{ marginTop: '24px' }}>
