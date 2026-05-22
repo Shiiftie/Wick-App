@@ -103,18 +103,18 @@ export default function LeaderboardPage() {
   ]
 
   const rankTiers = [
-    { icon: '🪨', name: 'Stone Hands', xp: '0 — 499 XP', color: '#888' },
-    { icon: '⚔️', name: 'Bronze Wick', xp: '500 — 1,499 XP', color: '#CD7F32' },
-    { icon: '🛡️', name: 'Silver Wick', xp: '1,500 — 2,999 XP', color: '#C0C0C0' },
-    { icon: '👑', name: 'Gold Wick', xp: '3,000 — 5,999 XP', color: '#FFD700' },
-    { icon: '⚡', name: 'Platinum Wick', xp: '6,000 — 9,999 XP', color: '#00c8ff' },
-    { icon: '💎', name: 'Diamond Wick', xp: '10,000 — 24,999 XP', color: '#b9f2ff' },
-    { icon: '🌑', name: 'Obsidian Wick', xp: '25,000 — 39,999 XP', color: '#7c5cfc' },
-    { icon: '🔴', name: 'Crimson Wick', xp: '40,000 — 59,999 XP', color: '#ff4466' },
-    { icon: '👻', name: 'Phantom Wick', xp: '60,000 — 99,999 XP', color: '#e0aaff' },
-    { icon: '⚔️', name: 'Titan Wick', xp: '100,000 — 199,999 XP', color: '#ff8c00' },
-    { icon: '🏆', name: 'Legend Wick', xp: '200,000+ XP', color: '#e8c84a' },
-    { icon: '👁️', name: 'Wick God', xp: '500,000+ XP', color: '#fff' },
+    { icon: '🪨', name: 'Stone Hands',   xp: '0 — 499 XP',              color: '#888888' },
+    { icon: '⚔️',  name: 'Bronze Wick',  xp: '500 — 1,499 XP',          color: '#CD7F32' },
+    { icon: '🛡️',  name: 'Silver Wick',  xp: '1,500 — 2,999 XP',        color: '#C0C0C0' },
+    { icon: '👑',  name: 'Gold Wick',    xp: '3,000 — 5,999 XP',        color: '#FFD700' },
+    { icon: '⚡',  name: 'Platinum Wick',xp: '6,000 — 9,999 XP',        color: '#00c8ff' },
+    { icon: '💎',  name: 'Diamond Wick', xp: '10,000 — 24,999 XP',      color: '#b9f2ff' },
+    { icon: '🌑',  name: 'Obsidian Wick',xp: '25,000 — 39,999 XP',      color: '#7c5cfc' },
+    { icon: '🔴',  name: 'Crimson Wick', xp: '40,000 — 59,999 XP',      color: '#ff4466' },
+    { icon: '👻',  name: 'Phantom Wick', xp: '60,000 — 99,999 XP',      color: '#e0aaff' },
+    { icon: '⚔️',  name: 'Titan Wick',   xp: '100,000 — 199,999 XP',    color: '#ff8c00' },
+    { icon: '🏆',  name: 'Legend Wick',  xp: '200,000 — 499,999 XP',    color: '#e8c84a' },
+    { icon: '👁️',  name: 'Wick God',     xp: '500,000+ XP',             color: '#ffffff' },
   ]
 
   return (
@@ -133,34 +133,45 @@ export default function LeaderboardPage() {
 
         {/* Right — XP System + Ranks */}
         <div>
+          {/* How You Earn XP */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '4px' }}>How You Earn XP</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '20px' }}>Every action inside Wick rewards you. Discipline pays more than profits.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {xpItems.map((item) => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }}>
-                  <span style={{ fontSize: '20px', flexShrink: 0 }}>{item.icon}</span>
-                  <div style={{ flex: 1 }}>
+                <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '32px 1fr auto', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }}>
+                  <span style={{ fontSize: '20px', textAlign: 'center' }}>{item.icon}</span>
+                  <div>
                     <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{item.label}</p>
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.sub}</p>
                   </div>
-                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--gold)', flexShrink: 0 }}>{item.xp}</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--gold)', whiteSpace: 'nowrap' }}>{item.xp}</span>
                 </div>
               ))}
             </div>
           </motion.div>
 
+          {/* Rank Tiers */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '4px' }}>Rank Tiers</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '20px' }}>Every trader starts at the bottom. Where you end up depends on how consistent you are.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {rankTiers.map((r) => (
-                <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <span style={{ fontSize: '16px', flexShrink: 0 }}>{r.icon}</span>
-                  <span style={{ flex: 1, fontSize: '13px', fontWeight: '700', color: r.color }}>{r.name}</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{r.xp}</span>
+
+            {/* Fixed-column grid — perfectly aligned */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {rankTiers.map((r, i) => (
+                <div key={r.name} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '32px 1fr 160px',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 4px',
+                  borderBottom: i < rankTiers.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                }}>
+                  <span style={{ fontSize: '18px', textAlign: 'center', lineHeight: 1 }}>{r.icon}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: r.color }}>{r.name}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>{r.xp}</span>
                 </div>
               ))}
             </div>
