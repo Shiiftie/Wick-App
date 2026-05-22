@@ -23,15 +23,21 @@ function getRank(xp) {
   return RANKS.find(r => xp >= r.min && xp <= r.max) || RANKS[0]
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isMobile
+}
+
 function SessionLogForm({ user, onSessionSaved }) {
+  const isMobile = useIsMobile()
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    outcome: '',
-    pnl: '',
-    emotions: '',
-    bias: '',
-    analysis: '',
-    lessons: ''
+    outcome: '', pnl: '', emotions: '', bias: '', analysis: '', lessons: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -46,14 +52,9 @@ function SessionLogForm({ user, onSessionSaved }) {
     setError('')
     setSuccess(false)
     const { error } = await supabase.from('sessions').insert({
-      user_id: user.id,
-      date: form.date,
-      outcome: form.outcome,
+      user_id: user.id, date: form.date, outcome: form.outcome,
       pnl: form.pnl ? parseFloat(form.pnl) : null,
-      emotions: form.emotions,
-      bias: form.bias,
-      analysis: form.analysis,
-      lessons: form.lessons
+      emotions: form.emotions, bias: form.bias, analysis: form.analysis, lessons: form.lessons
     })
     if (error) {
       setError(error.message)
@@ -71,10 +72,8 @@ function SessionLogForm({ user, onSessionSaved }) {
 
   const inputStyle = {
     width: '100%', padding: '10px 14px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid var(--border)',
-    borderRadius: '8px', color: 'var(--text)',
-    fontSize: '14px', outline: 'none',
+    background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+    borderRadius: '8px', color: 'var(--text)', fontSize: '14px', outline: 'none',
     boxSizing: 'border-box', fontFamily: 'Inter, sans-serif'
   }
 
@@ -86,10 +85,10 @@ function SessionLogForm({ user, onSessionSaved }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', padding: isMobile ? '16px' : '24px', marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '2px' }}>Log Today's Session</h2>
+          <h2 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '800', marginBottom: '2px' }}>Log Today's Session</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Document your trade before the details fade.</p>
         </div>
         <AnimatePresence>
@@ -103,7 +102,8 @@ function SessionLogForm({ user, onSessionSaved }) {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+        {/* Date + Outcome stacked on mobile */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div>
             <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Date</label>
             <input type="date" name="date" value={form.date} onChange={handleChange} style={inputStyle} required />
@@ -114,7 +114,7 @@ function SessionLogForm({ user, onSessionSaved }) {
               {outcomes.map(({ value, label, color }) => (
                 <motion.button key={value} type="button" whileTap={{ scale: 0.95 }}
                   onClick={() => setForm({ ...form, outcome: value })}
-                  style={{ flex: 1, padding: '10px 4px', borderRadius: '8px', border: form.outcome === value ? `1px solid ${color}` : '1px solid var(--border)', background: form.outcome === value ? `${color}15` : 'rgba(255,255,255,0.03)', color: form.outcome === value ? color : 'var(--text-muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  style={{ flex: 1, padding: '10px 4px', borderRadius: '8px', border: form.outcome === value ? `1px solid ${color}` : '1px solid var(--border)', background: form.outcome === value ? `${color}15` : 'rgba(255,255,255,0.03)', color: form.outcome === value ? color : 'var(--text-muted)', fontSize: isMobile ? '11px' : '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s' }}>
                   {label}
                 </motion.button>
               ))}
@@ -129,16 +129,14 @@ function SessionLogForm({ user, onSessionSaved }) {
 
         <motion.button type="button" onClick={() => setExpanded(!expanded)} whileTap={{ scale: 0.98 }}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', marginBottom: expanded ? '12px' : '0', padding: '4px 0' }}>
-          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={14} />
-          </motion.div>
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={14} /></motion.div>
           {expanded ? 'Less fields' : 'Add thoughts, emotions, analysis...'}
         </motion.button>
 
         <AnimatePresence>
           {expanded && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
                   <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Emotions</label>
                   <input type="text" name="emotions" value={form.emotions} onChange={handleChange} placeholder="How were you feeling?" style={inputStyle} />
@@ -150,7 +148,7 @@ function SessionLogForm({ user, onSessionSaved }) {
               </div>
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Before: What's your plan?</label>
-                <textarea name="analysis" value={form.analysis} onChange={handleChange} placeholder="What are you seeing in the market? What's your setup?" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+                <textarea name="analysis" value={form.analysis} onChange={handleChange} placeholder="What are you seeing in the market?" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>After: What did you learn?</label>
@@ -163,7 +161,7 @@ function SessionLogForm({ user, onSessionSaved }) {
         {error && <p style={{ color: 'var(--red)', fontSize: '13px', marginBottom: '12px' }}>{error}</p>}
 
         <motion.button type="submit" disabled={loading || !form.outcome} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          style={{ padding: '12px 28px', background: loading || !form.outcome ? 'var(--bg-3)' : 'var(--gold)', color: loading || !form.outcome ? 'var(--text-muted)' : '#000', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading || !form.outcome ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}>
+          style={{ width: isMobile ? '100%' : 'auto', padding: '12px 28px', background: loading || !form.outcome ? 'var(--bg-3)' : 'var(--gold)', color: loading || !form.outcome ? 'var(--text-muted)' : '#000', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading || !form.outcome ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}>
           {loading ? 'Saving...' : 'Save Session'}
         </motion.button>
       </form>
@@ -172,6 +170,7 @@ function SessionLogForm({ user, onSessionSaved }) {
 }
 
 function SessionFeed({ sessions }) {
+  const isMobile = useIsMobile()
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: 'var(--text-dim)' }}>Recent Sessions</h3>
@@ -183,10 +182,10 @@ function SessionFeed({ sessions }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {sessions.slice(0, 10).map((s, i) => (
             <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px 20px' }}>
+              style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '14px', padding: isMobile ? '14px' : '16px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: s.analysis || s.lessons ? '12px' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: s.outcome === 'win' ? 'rgba(0,255,136,0.1)' : s.outcome === 'loss' ? 'rgba(255,68,102,0.1)' : 'rgba(136,136,136,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: s.outcome === 'win' ? 'rgba(0,255,136,0.1)' : s.outcome === 'loss' ? 'rgba(255,68,102,0.1)' : 'rgba(136,136,136,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {s.outcome === 'win' ? <TrendingUp size={15} color="var(--green)" /> : s.outcome === 'loss' ? <TrendingDown size={15} color="var(--red)" /> : <Minus size={15} color="var(--text-muted)" />}
                   </div>
                   <div>
@@ -238,16 +237,16 @@ function TradingFloorSidebar({ user }) {
   const [userColors, setUserColors] = useState({})
   const [userAvatars, setUserAvatars] = useState({})
   const bottomRef = useRef(null)
+  const isMobile = useIsMobile()
 
   const getTimeUntilMidnight = () => {
-    const now = new Date()
-    const midnight = new Date()
+    const now = new Date(), midnight = new Date()
     midnight.setHours(24, 0, 0, 0)
     const diff = midnight - now
     const h = Math.floor(diff / 1000 / 60 / 60)
     const m = Math.floor((diff / 1000 / 60) % 60)
     const s = Math.floor((diff / 1000) % 60)
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
   }
 
   useEffect(() => {
@@ -266,8 +265,7 @@ function TradingFloorSidebar({ user }) {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const since = new Date()
-      since.setHours(0, 0, 0, 0)
+      const since = new Date(); since.setHours(0, 0, 0, 0)
       const { data } = await supabase.from('messages').select('*').gte('created_at', since.toISOString()).order('created_at', { ascending: true })
       if (data) {
         setMessages(data)
@@ -275,14 +273,9 @@ function TradingFloorSidebar({ user }) {
         if (userIds.length > 0) {
           const { data: profiles } = await supabase.from('profiles').select('id, username_color, avatar_url').in('id', userIds)
           if (profiles) {
-            const colorMap = {}
-            const avatarMap = {}
-            profiles.forEach(p => {
-              colorMap[p.id] = p.username_color || '#e8c84a'
-              if (p.avatar_url) avatarMap[p.id] = p.avatar_url
-            })
-            setUserColors(colorMap)
-            setUserAvatars(avatarMap)
+            const colorMap = {}, avatarMap = {}
+            profiles.forEach(p => { colorMap[p.id] = p.username_color || '#e8c84a'; if (p.avatar_url) avatarMap[p.id] = p.avatar_url })
+            setUserColors(colorMap); setUserAvatars(avatarMap)
           }
         }
       }
@@ -292,12 +285,8 @@ function TradingFloorSidebar({ user }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         setMessages(prev => [...prev, payload.new])
         const { data } = await supabase.from('profiles').select('id, username_color, avatar_url').eq('id', payload.new.user_id).single()
-        if (data) {
-          setUserColors(prev => ({ ...prev, [data.id]: data.username_color || '#e8c84a' }))
-          if (data.avatar_url) setUserAvatars(prev => ({ ...prev, [data.id]: data.avatar_url }))
-        }
-      })
-      .subscribe()
+        if (data) { setUserColors(prev => ({ ...prev, [data.id]: data.username_color || '#e8c84a' })); if (data.avatar_url) setUserAvatars(prev => ({ ...prev, [data.id]: data.avatar_url })) }
+      }).subscribe()
     return () => supabase.removeChannel(channel)
   }, [])
 
@@ -307,8 +296,7 @@ function TradingFloorSidebar({ user }) {
     if (!input.trim() || loading) return
     if (!username) { alert('Set a username in Profile first.'); return }
     setLoading(true)
-    const content = input.trim()
-    setInput('')
+    const content = input.trim(); setInput('')
     await supabase.from('messages').insert({ user_id: user.id, username, content })
     setLoading(false)
   }
@@ -318,34 +306,30 @@ function TradingFloorSidebar({ user }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '640px' }}>
+      style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: isMobile ? '320px' : '640px' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)' }}>
         <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
         <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold)', flex: 1 }}>Trading Floor</span>
         <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontFamily: 'monospace' }}>{timeUntilReset}</span>
       </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column' }}>
         {messages.length === 0 ? (
           <div style={{ width: '100%', textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: '13px' }}>🕯️ The floor is quiet.</div>
-        ) : (
-          messages.map((msg) => (
-            <div key={msg.id} style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', padding: '3px 0', width: '100%' }}>
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: '800', color: '#fff', marginTop: '1px' }}>
-                {userAvatars[msg.user_id] ? <img src={userAvatars[msg.user_id]} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : msg.username?.[0]?.toUpperCase()}
-              </div>
-              <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.5', wordBreak: 'break-word', textAlign: 'left', flex: 1 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '10px', marginRight: '5px' }}>{formatTime(msg.created_at)}</span>
-                <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a' }}>{msg.username}</span>
-                <span style={{ color: 'var(--text-muted)', margin: '0 3px' }}>:</span>
-                <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
-              </p>
+        ) : messages.map((msg) => (
+          <div key={msg.id} style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', padding: '3px 0', width: '100%' }}>
+            <div style={{ width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: '800', color: '#fff', marginTop: '1px' }}>
+              {userAvatars[msg.user_id] ? <img src={userAvatars[msg.user_id]} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : msg.username?.[0]?.toUpperCase()}
             </div>
-          ))
-        )}
+            <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.5', wordBreak: 'break-word', flex: 1 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '10px', marginRight: '5px' }}>{formatTime(msg.created_at)}</span>
+              <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a' }}>{msg.username}</span>
+              <span style={{ color: 'var(--text-muted)', margin: '0 3px' }}>:</span>
+              <span style={{ color: '#e0e0e0' }}>{msg.content}</span>
+            </p>
+          </div>
+        ))}
         <div ref={bottomRef} />
       </div>
-
       <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '8px', alignItems: 'center' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', gap: '6px' }}>
           <span style={{ color: usernameColor, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
@@ -402,25 +386,38 @@ function LeaderboardSidebar() {
 }
 
 function StatsBar({ sessions, xp }) {
+  const isMobile = useIsMobile()
   const wins = sessions.filter(s => s.outcome === 'win').length
   const losses = sessions.filter(s => s.outcome === 'loss').length
   const winRate = sessions.length > 0 ? Math.round((wins / (wins + losses || 1)) * 100) : 0
   const totalPnl = sessions.reduce((sum, s) => sum + (s.pnl || 0), 0)
   const rank = getRank(xp)
 
+  const stats = [
+    { label: 'Sessions', value: sessions.length },
+    { label: 'Win Rate', value: `${winRate}%` },
+    { label: 'Total P&L', value: `$${totalPnl.toFixed(0)}`, color: totalPnl >= 0 ? 'var(--green)' : 'var(--red)' },
+    { label: 'XP', value: xp.toLocaleString(), color: 'var(--gold)' },
+    { label: 'Rank', value: `${rank.icon} ${rank.name}`, color: rank.color },
+  ]
+
   return (
     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-      style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '20px' }}>
-      {[
-        { label: 'Sessions', value: sessions.length },
-        { label: 'Win Rate', value: `${winRate}%` },
-        { label: 'Total P&L', value: `$${totalPnl.toFixed(0)}`, color: totalPnl >= 0 ? 'var(--green)' : 'var(--red)' },
-        { label: 'XP', value: xp.toLocaleString(), color: 'var(--gold)' },
-        { label: 'Rank', value: `${rank.icon} ${rank.name}`, color: rank.color },
-      ].map((stat) => (
-        <div key={stat.label} style={{ background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{stat.label}</p>
-          <p style={{ fontSize: '15px', fontWeight: '800', color: stat.color || 'var(--text)', letterSpacing: '-0.3px' }}>{stat.value}</p>
+      style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+        gap: '8px', marginBottom: '20px'
+      }}>
+      {stats.map((stat, i) => (
+        <div key={stat.label} style={{
+          background: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)',
+          border: '1px solid var(--border)', borderRadius: '12px',
+          padding: isMobile ? '12px 8px' : '14px 16px', textAlign: 'center',
+          // Hide rank on mobile to keep grid clean (show in 3-col)
+          display: isMobile && i === 4 ? 'none' : 'block'
+        }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{stat.label}</p>
+          <p style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: '800', color: stat.color || 'var(--text)', letterSpacing: '-0.3px' }}>{stat.value}</p>
         </div>
       ))}
     </motion.div>
@@ -428,22 +425,37 @@ function StatsBar({ sessions, xp }) {
 }
 
 export default function HomePage({ user, sessions, onSessionSaved, xp }) {
+  const isMobile = useIsMobile()
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <StatsBar sessions={sessions} xp={xp} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
-        <div>
+
+      {isMobile ? (
+        // Mobile: single column layout
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '80px' }}>
           <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
-          <ReportCard user={user} />
-          <div style={{ marginTop: '24px' }}>
-            <SessionFeed sessions={sessions} />
-          </div>
-        </div>
-        <div style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <LeaderboardSidebar />
           <TradingFloorSidebar user={user} />
+          <ReportCard user={user} />
+          <SessionFeed sessions={sessions} />
         </div>
-      </div>
+      ) : (
+        // Desktop: two-column layout
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
+          <div>
+            <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
+            <ReportCard user={user} />
+            <div style={{ marginTop: '24px' }}>
+              <SessionFeed sessions={sessions} />
+            </div>
+          </div>
+          <div style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <LeaderboardSidebar />
+            <TradingFloorSidebar user={user} />
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
