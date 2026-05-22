@@ -100,7 +100,7 @@ function AuthPage() {
   )
 }
 
-function PaywallPage({ user }) {
+function PaywallPage({ user, onSignOut }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -167,7 +167,7 @@ function PaywallPage({ user }) {
           </motion.button>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>Cancel anytime. No hidden fees.</p>
         </motion.div>
-        <motion.button whileHover={{ opacity: 0.7 }} onClick={() => supabase.auth.signOut()}
+        <motion.button whileHover={{ opacity: 0.7 }} onClick={onSignOut}
           style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', padding: '8px' }}>
           Sign out
         </motion.button>
@@ -216,7 +216,7 @@ function AppShell({ user }) {
       <CandleBackground />
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
-        <main style={{ paddingTop: '60px' }}>
+        <main style={{ paddingTop: '88px' }}>
           <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: '24px' }}>
             <AnimatePresence mode="wait">
               <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
@@ -291,6 +291,6 @@ export default function App() {
   )
 
   if (!user) return <AuthPage />
-  if (!isSubscribed) return <PaywallPage user={user} />
+  if (!isSubscribed) return <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
   return <AppShell user={user} />
 }
