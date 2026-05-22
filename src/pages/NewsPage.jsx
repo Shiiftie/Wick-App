@@ -49,7 +49,7 @@ export default function NewsPage() {
       <style>{`
         .tradingview-widget-container iframe {
           color-scheme: dark !important;
-          filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.95);
+          filter: invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.1);
           border-radius: 16px;
         }
 
