@@ -177,7 +177,7 @@ function RiskMeter({ balance, startingBalance, dailyPnl, rules }) {
   const getColor = (pct) => pct > 75 ? '#ff4466' : pct > 50 ? '#ff9f44' : '#00ff88'
 
   return (
-    <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
         <Shield size={10} color="#7c9eff" />
         <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px' }}>RISK MANAGEMENT</span>
@@ -534,11 +534,13 @@ export default function SimulatorPage({ user }) {
       </div>
 
       {/* ── CHART + SIDEBAR ── */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 200px', overflow: 'hidden', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 280px', overflow: 'hidden', minHeight: 0 }}>
 
-        {/* Chart — full drawing toolbar on left */}
+        {/* Chart — full drawing toolbar on left, bleed edges to remove TV internal gaps */}
         <div style={{ position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-          <TradingViewChart symbol={asset.symbol} />
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: '-2px', right: '-2px' }}>
+            <TradingViewChart symbol={asset.symbol} />
+          </div>
         </div>
 
         {/* ── RIGHT SIDEBAR ── */}
@@ -553,14 +555,14 @@ export default function SimulatorPage({ user }) {
           />
 
           {/* Order entry */}
-          <div style={{ padding: '12px 12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '10px' }}>ORDER ENTRY</p>
+          <div style={{ padding: '16px 16px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '12px' }}>ORDER ENTRY</p>
 
             {/* Long / Short */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
               {['long', 'short'].map(d => (
                 <motion.button key={d} whileTap={{ scale: 0.96 }} onClick={() => setDirection(d)}
-                  style={{ padding: '9px 0', borderRadius: '7px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)') : 'rgba(255,255,255,0.02)', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.15s' }}>
+                  style={{ padding: '12px 0', borderRadius: '8px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)') : 'rgba(255,255,255,0.02)', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', transition: 'all 0.15s' }}>
                   {d === 'long' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
                   {d.toUpperCase()}
                 </motion.button>
@@ -568,26 +570,26 @@ export default function SimulatorPage({ user }) {
             </div>
 
             {/* Size */}
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <label style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1.5px' }}>SIZE ($)</label>
-                <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.15)' }}>Max ${rules.maxPositionSize.toLocaleString()}</span>
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <label style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1.5px' }}>SIZE ($)</label>
+                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.15)' }}>Max ${rules.maxPositionSize.toLocaleString()}</span>
               </div>
               <input type="number" value={size} onChange={e => setSize(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#e0e0e0', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px', color: '#e0e0e0', fontSize: '14px', fontWeight: '700', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
             </div>
 
             {/* SL / TP */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
               <div>
-                <label style={{ fontSize: '8px', color: '#ff6680', letterSpacing: '1px', display: 'block', marginBottom: '3px' }}>STOP LOSS</label>
+                <label style={{ fontSize: '9px', color: '#ff6680', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>STOP LOSS</label>
                 <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="—"
-                  style={{ width: '100%', padding: '6px 7px', background: 'rgba(255,68,102,0.04)', border: '1px solid rgba(255,68,102,0.15)', borderRadius: '5px', color: '#ff6680', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                  style={{ width: '100%', padding: '8px 9px', background: 'rgba(255,68,102,0.04)', border: '1px solid rgba(255,68,102,0.15)', borderRadius: '6px', color: '#ff6680', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
               </div>
               <div>
-                <label style={{ fontSize: '8px', color: '#00cc6a', letterSpacing: '1px', display: 'block', marginBottom: '3px' }}>TAKE PROFIT</label>
+                <label style={{ fontSize: '9px', color: '#00cc6a', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>TAKE PROFIT</label>
                 <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="—"
-                  style={{ width: '100%', padding: '6px 7px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '5px', color: '#00cc6a', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                  style={{ width: '100%', padding: '8px 9px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '6px', color: '#00cc6a', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
               </div>
             </div>
 
@@ -602,24 +604,24 @@ export default function SimulatorPage({ user }) {
             )}
 
             {/* Market price */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 9px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>MARKET</span>
-              <motion.span key={price} animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e8c84a' }} style={{ fontSize: '14px', fontWeight: '800' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '7px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>MARKET PRICE</span>
+              <motion.span key={price} animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e8c84a' }} style={{ fontSize: '16px', fontWeight: '800' }}>
                 {price.toFixed(decimals)}
               </motion.span>
             </div>
 
             {/* Execute */}
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleExecute}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #009944, #00ff88)' : 'linear-gradient(135deg, #aa1133, #ff4466)', color: '#000', fontSize: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+              style={{ width: '100%', padding: '14px', borderRadius: '9px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #009944, #00ff88)' : 'linear-gradient(135deg, #aa1133, #ff4466)', color: '#000', fontSize: '13px', fontWeight: '900', cursor: 'pointer', letterSpacing: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Zap size={12} />
               {direction === 'long' ? 'BUY LONG' : 'SELL SHORT'}
             </motion.button>
           </div>
 
           {/* Open positions */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
-            <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '8px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+            <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '10px' }}>
               OPEN POSITIONS {positions.length > 0 && <span style={{ color: '#e8c84a' }}>({positions.length})</span>}
             </p>
             {positions.length === 0 ? (
