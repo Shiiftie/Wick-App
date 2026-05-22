@@ -1,348 +1,302 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
-import {
-  TrendingUp, TrendingDown, X, Plus, Activity,
-  DollarSign, Target, Shield, Zap, Clock, ChevronDown
-} from 'lucide-react'
+import { TrendingUp, TrendingDown, X, Zap, ChevronDown } from 'lucide-react'
 
-// ─── ASSET CATALOGUE ───────────────────────────────────────────────
+// ─── ASSETS ────────────────────────────────────────────────────────
 const ASSETS = {
   forex: [
-    { symbol: 'FX:EURUSD', label: 'EUR/USD', pip: 0.0001, pipValue: 10 },
-    { symbol: 'FX:GBPUSD', label: 'GBP/USD', pip: 0.0001, pipValue: 10 },
-    { symbol: 'FX:USDJPY', label: 'USD/JPY', pip: 0.01,   pipValue: 10 },
-    { symbol: 'FX:AUDUSD', label: 'AUD/USD', pip: 0.0001, pipValue: 10 },
-    { symbol: 'FX:USDCAD', label: 'USD/CAD', pip: 0.0001, pipValue: 10 },
-    { symbol: 'FX:USDCHF', label: 'USD/CHF', pip: 0.0001, pipValue: 10 },
+    { symbol: 'FX:EURUSD', label: 'EUR/USD', pip: 0.0001 },
+    { symbol: 'FX:GBPUSD', label: 'GBP/USD', pip: 0.0001 },
+    { symbol: 'FX:USDJPY', label: 'USD/JPY', pip: 0.01 },
+    { symbol: 'FX:AUDUSD', label: 'AUD/USD', pip: 0.0001 },
+    { symbol: 'FX:USDCAD', label: 'USD/CAD', pip: 0.0001 },
+    { symbol: 'FX:USDCHF', label: 'USD/CHF', pip: 0.0001 },
   ],
   stocks: [
-    { symbol: 'NASDAQ:AAPL',  label: 'AAPL',  pip: 0.01, pipValue: 1 },
-    { symbol: 'NASDAQ:TSLA',  label: 'TSLA',  pip: 0.01, pipValue: 1 },
-    { symbol: 'NASDAQ:NVDA',  label: 'NVDA',  pip: 0.01, pipValue: 1 },
-    { symbol: 'CME_MINI:ES1!',label: 'ES',    pip: 0.25, pipValue: 12.50 },
-    { symbol: 'CME_MINI:NQ1!',label: 'NQ',    pip: 0.25, pipValue: 5 },
-    { symbol: 'AMEX:SPY',     label: 'SPY',   pip: 0.01, pipValue: 1 },
+    { symbol: 'NASDAQ:AAPL',   label: 'AAPL', pip: 0.01 },
+    { symbol: 'NASDAQ:TSLA',   label: 'TSLA', pip: 0.01 },
+    { symbol: 'NASDAQ:NVDA',   label: 'NVDA', pip: 0.01 },
+    { symbol: 'CME_MINI:ES1!', label: 'ES',   pip: 0.25 },
+    { symbol: 'CME_MINI:NQ1!', label: 'NQ',   pip: 0.25 },
+    { symbol: 'AMEX:SPY',      label: 'SPY',  pip: 0.01 },
   ],
   crypto: [
-    { symbol: 'BINANCE:BTCUSDT', label: 'BTC/USD', pip: 1,    pipValue: 1 },
-    { symbol: 'BINANCE:ETHUSDT', label: 'ETH/USD', pip: 0.01, pipValue: 1 },
-    { symbol: 'BINANCE:SOLUSDT', label: 'SOL/USD', pip: 0.01, pipValue: 1 },
-    { symbol: 'BINANCE:XRPUSDT', label: 'XRP/USD', pip: 0.0001, pipValue: 1 },
+    { symbol: 'BINANCE:BTCUSDT', label: 'BTC/USD', pip: 1 },
+    { symbol: 'BINANCE:ETHUSDT', label: 'ETH/USD', pip: 0.01 },
+    { symbol: 'BINANCE:SOLUSDT', label: 'SOL/USD', pip: 0.01 },
+    { symbol: 'BINANCE:XRPUSDT', label: 'XRP/USD', pip: 0.0001 },
   ],
 }
 
-const CATEGORY_LABELS = { forex: 'Forex', stocks: 'Stocks & Indices', crypto: 'Crypto' }
-
-// ─── SIMULATED PRICE ENGINE ────────────────────────────────────────
-// Uses TradingView for charts; price simulation uses a random walk
-// seeded from a realistic base price per asset
 const BASE_PRICES = {
   'FX:EURUSD': 1.0842, 'FX:GBPUSD': 1.2734, 'FX:USDJPY': 149.82,
   'FX:AUDUSD': 0.6521, 'FX:USDCAD': 1.3612, 'FX:USDCHF': 0.9034,
   'NASDAQ:AAPL': 213.45, 'NASDAQ:TSLA': 248.10, 'NASDAQ:NVDA': 131.20,
   'CME_MINI:ES1!': 5428.50, 'CME_MINI:NQ1!': 19234.25, 'AMEX:SPY': 542.80,
-  'BINANCE:BTCUSDT': 68420, 'BINANCE:ETHUSDT': 3520, 'BINANCE:SOLUSDT': 172.40, 'BINANCE:XRPUSDT': 0.5821,
+  'BINANCE:BTCUSDT': 68420, 'BINANCE:ETHUSDT': 3520,
+  'BINANCE:SOLUSDT': 172.40, 'BINANCE:XRPUSDT': 0.5821,
 }
+
+const BALANCE_OPTIONS = [10000, 25000, 50000, 100000]
 
 function useLivePrice(symbol) {
   const [price, setPrice] = useState(BASE_PRICES[symbol] || 100)
-  const priceRef = useRef(BASE_PRICES[symbol] || 100)
-
+  const ref = useRef(BASE_PRICES[symbol] || 100)
   useEffect(() => {
     const base = BASE_PRICES[symbol] || 100
-    priceRef.current = base
+    ref.current = base
     setPrice(base)
-
-    const volatility = base > 10000 ? 0.0004 : base > 100 ? 0.0003 : base > 1 ? 0.00015 : 0.00008
-
-    const interval = setInterval(() => {
-      const change = priceRef.current * volatility * (Math.random() - 0.499)
-      priceRef.current = Math.max(priceRef.current + change, 0.0001)
-      setPrice(parseFloat(priceRef.current.toFixed(
-        base > 1000 ? 2 : base > 10 ? 2 : base > 1 ? 4 : 5
-      )))
-    }, 800)
-
-    return () => clearInterval(interval)
+    const vol = base > 10000 ? 0.0003 : base > 100 ? 0.0002 : base > 1 ? 0.0001 : 0.00006
+    const iv = setInterval(() => {
+      ref.current = Math.max(ref.current + ref.current * vol * (Math.random() - 0.499), 0.0001)
+      const d = base > 1000 ? 2 : base > 10 ? 2 : base > 1 ? 4 : 5
+      setPrice(parseFloat(ref.current.toFixed(d)))
+    }, 600)
+    return () => clearInterval(iv)
   }, [symbol])
-
   return price
 }
 
-// ─── TV CHART ──────────────────────────────────────────────────────
 function TradingViewChart({ symbol }) {
-  const containerRef = useRef(null)
-  const widgetRef = useRef(null)
-
+  const ref = useRef(null)
   useEffect(() => {
-    if (!containerRef.current) return
-    containerRef.current.innerHTML = ''
-
-    const script = document.createElement('script')
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      symbol,
-      interval: '5',
-      timezone: 'Etc/UTC',
-      theme: 'dark',
-      style: '1',
-      locale: 'en',
+    if (!ref.current) return
+    ref.current.innerHTML = ''
+    const s = document.createElement('script')
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
+    s.async = true
+    s.innerHTML = JSON.stringify({
+      symbol, interval: '5', timezone: 'Etc/UTC',
+      theme: 'dark', style: '1', locale: 'en',
       backgroundColor: 'rgba(0,0,0,0)',
-      gridColor: 'rgba(232,200,74,0.04)',
-      width: '100%',
-      height: '100%',
+      gridColor: 'rgba(255,255,255,0.03)',
+      width: '100%', height: '100%',
       allow_symbol_change: false,
       hide_top_toolbar: false,
-      hide_legend: false,
       hide_side_toolbar: false,
       save_image: false,
-      withdateranges: true,
-      details: false,
-      hotlist: false,
-      calendar: false,
-      studies: ['STD;MACD', 'STD;RSI'],
+      studies: ['STD;RSI', 'STD;MACD'],
     })
-
-    containerRef.current.appendChild(script)
+    ref.current.appendChild(s)
   }, [symbol])
-
-  return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-  )
+  return <div ref={ref} style={{ width: '100%', height: '100%' }} />
 }
 
-// ─── STAT CELL ─────────────────────────────────────────────────────
-function StatCell({ label, value, color, mono }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-      <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }}>{label}</span>
-      <span style={{ fontSize: '13px', fontWeight: '700', color: color || '#e0e0e0', fontFamily: mono !== false ? 'monospace' : 'inherit' }}>{value}</span>
-    </div>
-  )
-}
-
-// ─── POSITION CARD ─────────────────────────────────────────────────
-function PositionCard({ pos, currentPrice, onClose }) {
-  const rawPnl = pos.direction === 'long'
-    ? (currentPrice - pos.entryPrice) * pos.size * (1 / (pos.asset.pip || 0.0001)) * (pos.asset.pipValue || 10) / (1 / (pos.asset.pip || 0.0001))
-    : (pos.entryPrice - currentPrice) * pos.size * (1 / (pos.asset.pip || 0.0001)) * (pos.asset.pipValue || 10) / (1 / (pos.asset.pip || 0.0001))
-
-  const pnl = ((currentPrice - pos.entryPrice) / pos.entryPrice) * pos.size * (pos.direction === 'long' ? 1 : -1) * 1000
-  const pips = pos.direction === 'long'
-    ? (currentPrice - pos.entryPrice) / pos.asset.pip
-    : (pos.entryPrice - currentPrice) / pos.asset.pip
-  const isProfit = pnl >= 0
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      style={{
-        background: isProfit ? 'rgba(0,255,136,0.04)' : 'rgba(255,68,102,0.04)',
-        border: `1px solid ${isProfit ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,102,0.15)'}`,
-        borderRadius: '10px', padding: '12px 14px',
-        display: 'flex', flexDirection: 'column', gap: '8px',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ padding: '3px 8px', borderRadius: '4px', background: pos.direction === 'long' ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,102,0.15)', fontSize: '10px', fontWeight: '800', color: pos.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px', fontFamily: 'monospace' }}>
-            {pos.direction.toUpperCase()}
-          </div>
-          <span style={{ fontSize: '13px', fontWeight: '700', color: '#e0e0e0', fontFamily: 'monospace' }}>{pos.asset.label}</span>
-        </div>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={() => onClose(pos.id, pnl)}
-          style={{ background: 'rgba(255,68,102,0.1)', border: '1px solid rgba(255,68,102,0.3)', borderRadius: '6px', padding: '4px 10px', color: '#ff4466', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'monospace' }}>
-          CLOSE
-        </motion.button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-        <StatCell label="Entry" value={pos.entryPrice.toFixed(pos.asset.pip < 0.001 ? 5 : pos.asset.pip < 0.1 ? 4 : 2)} />
-        <StatCell label="Current" value={currentPrice.toFixed(pos.asset.pip < 0.001 ? 5 : pos.asset.pip < 0.1 ? 4 : 2)} />
-        <StatCell label="Pips" value={pips >= 0 ? `+${pips.toFixed(1)}` : pips.toFixed(1)} color={pips >= 0 ? '#00ff88' : '#ff4466'} />
-        <StatCell label="P&L" value={`${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`} color={isProfit ? '#00ff88' : '#ff4466'} />
-      </div>
-    </motion.div>
-  )
-}
-
-// ─── MAIN PAGE ─────────────────────────────────────────────────────
 export default function SimulatorPage({ user }) {
+  const [startingBalance, setStartingBalance] = useState(null) // null = not chosen yet
+  const [balance, setBalance] = useState(10000)
   const [category, setCategory] = useState('stocks')
-  const [selectedAsset, setSelectedAsset] = useState(ASSETS.stocks[0])
+  const [asset, setAsset] = useState(ASSETS.stocks[0])
   const [direction, setDirection] = useState('long')
   const [size, setSize] = useState('1000')
   const [sl, setSl] = useState('')
   const [tp, setTp] = useState('')
   const [positions, setPositions] = useState([])
-  const [closedTrades, setClosedTrades] = useState([])
-  const [balance, setBalance] = useState(10000)
-  const [showLog, setShowLog] = useState(false)
-  const [logSaved, setLogSaved] = useState(false)
-  const [flash, setFlash] = useState(null) // 'profit' | 'loss'
+  const [history, setHistory] = useState([])
+  const [loggedIds, setLoggedIds] = useState(new Set())
+  const [flash, setFlash] = useState(null)
 
-  const currentPrice = useLivePrice(selectedAsset.symbol)
-  const prevPrice = useRef(currentPrice)
+  const price = useLivePrice(asset.symbol)
+  const prevPrice = useRef(price)
   const [priceDir, setPriceDir] = useState(null)
 
   useEffect(() => {
-    if (currentPrice > prevPrice.current) setPriceDir('up')
-    else if (currentPrice < prevPrice.current) setPriceDir('down')
-    prevPrice.current = currentPrice
-  }, [currentPrice])
+    if (price > prevPrice.current) setPriceDir('up')
+    else if (price < prevPrice.current) setPriceDir('down')
+    prevPrice.current = price
+  }, [price])
 
-  const totalPnl = positions.reduce((sum, pos) => {
-    const pnl = ((currentPrice - pos.entryPrice) / pos.entryPrice) * pos.size * (pos.direction === 'long' ? 1 : -1) * 1000
-    return sum + pnl
+  const decimals = asset.pip < 0.001 ? 5 : asset.pip < 0.1 ? 4 : 2
+
+  const openPnl = positions.reduce((sum, p) => {
+    const diff = p.direction === 'long' ? price - p.entry : p.entry - price
+    return sum + (diff / p.entry) * p.size * 1000
   }, 0)
 
-  const handleCategoryChange = (cat) => {
-    setCategory(cat)
-    setSelectedAsset(ASSETS[cat][0])
+  const handleSelectBalance = (b) => {
+    setStartingBalance(b)
+    setBalance(b)
   }
 
-  const handleOpenPosition = () => {
+  const handleExecute = () => {
     if (!size || parseFloat(size) <= 0) return
-    const newPos = {
+    setPositions(prev => [...prev, {
       id: Date.now(),
-      asset: selectedAsset,
-      direction,
-      entryPrice: currentPrice,
+      asset, direction,
+      entry: price,
       size: parseFloat(size),
       sl: sl ? parseFloat(sl) : null,
       tp: tp ? parseFloat(tp) : null,
       openedAt: new Date(),
-    }
-    setPositions(prev => [...prev, newPos])
+    }])
     setSl(''); setTp('')
   }
 
-  const handleClosePosition = useCallback((id, pnl) => {
+  const handleClose = useCallback((id) => {
     const pos = positions.find(p => p.id === id)
     if (!pos) return
-    const isProfit = pnl >= 0
-    setFlash(isProfit ? 'profit' : 'loss')
-    setTimeout(() => setFlash(null), 600)
-    setBalance(prev => prev + pnl)
-    setClosedTrades(prev => [...prev, { ...pos, closedAt: new Date(), pnl, closePrice: currentPrice }])
-    setPositions(prev => prev.filter(p => p.id !== id))
-  }, [positions, currentPrice])
+    const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
+    const pnl = (diff / pos.entry) * pos.size * 1000
+    setFlash(pnl >= 0 ? 'profit' : 'loss')
+    setTimeout(() => setFlash(null), 500)
+    setBalance(b => b + pnl)
+    setHistory(h => [{ ...pos, closePrice: price, pnl, closedAt: new Date() }, ...h])
+    setPositions(p => p.filter(x => x.id !== id))
+  }, [positions, price])
 
-  const handleLogSession = async (trade) => {
+  const handleLog = async (trade) => {
+    if (loggedIds.has(trade.id)) return
     const outcome = trade.pnl >= 0 ? 'win' : 'loss'
     await supabase.from('sessions').insert({
       user_id: user.id,
       date: new Date().toISOString().split('T')[0],
-      outcome,
-      pnl: parseFloat(trade.pnl.toFixed(2)),
-      analysis: `Demo trade on ${trade.asset.label}. ${trade.direction.toUpperCase()} from ${trade.entryPrice} to ${trade.closePrice?.toFixed(4)}`,
-      lessons: 'Logged from Wick Simulator.',
-      emotions: 'Demo',
-      bias: trade.direction === 'long' ? 'Bullish' : 'Bearish',
+      outcome, pnl: parseFloat(trade.pnl.toFixed(2)),
+      analysis: `Demo trade — ${trade.asset.label} ${trade.direction.toUpperCase()} from ${trade.entry.toFixed(decimals)} to ${trade.closePrice?.toFixed(decimals)}`,
+      emotions: 'Demo', bias: trade.direction === 'long' ? 'Bullish' : 'Bearish',
     })
-    const xpGain = outcome === 'win' ? 100 : 50
-    await supabase.rpc('increment_xp', { user_id_input: user.id, xp_amount: xpGain })
-    setLogSaved(true)
-    setTimeout(() => setLogSaved(false), 3000)
+    await supabase.rpc('increment_xp', { user_id_input: user.id, xp_amount: outcome === 'win' ? 100 : 50 })
+    setLoggedIds(s => new Set([...s, trade.id]))
   }
 
-  const decimals = selectedAsset.pip < 0.001 ? 5 : selectedAsset.pip < 0.1 ? 4 : 2
+  // ── BALANCE PICKER SCREEN ──────────────────────────────────────
+  if (!startingBalance) {
+    return (
+      <div style={{ minHeight: 'calc(100vh - 90px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: 'center', maxWidth: '520px', padding: '0 24px' }}>
+          <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+            style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00ff88', margin: '0 auto 24px', boxShadow: '0 0 12px #00ff88' }} />
+          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#fff', letterSpacing: '-1px', marginBottom: '8px' }}>Paper Trading Simulator</h1>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '40px', lineHeight: 1.6 }}>
+            Choose your starting balance. Practice with real market data, zero real risk.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+            {BALANCE_OPTIONS.map(b => (
+              <motion.button key={b} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={() => handleSelectBalance(b)}
+                style={{ padding: '24px', borderRadius: '14px', border: '1px solid rgba(232,200,74,0.2)', background: 'rgba(232,200,74,0.04)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#e8c84a'; e.currentTarget.style.background = 'rgba(232,200,74,0.08)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(232,200,74,0.2)'; e.currentTarget.style.background = 'rgba(232,200,74,0.04)' }}
+              >
+                <span style={{ fontSize: '24px', fontWeight: '900', color: '#e8c84a', letterSpacing: '-1px' }}>
+                  ${(b / 1000).toFixed(0)}K
+                </span>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>STARTING BALANCE</span>
+              </motion.button>
+            ))}
+          </div>
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.5px' }}>
+            WICK PAPER TRADING — FOR PRACTICE ONLY. NOT FINANCIAL ADVICE.
+          </p>
+        </motion.div>
+      </div>
+    )
+  }
 
+  // ── MAIN SIMULATOR ────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: 'monospace', minHeight: '100vh', color: '#e0e0e0', position: 'relative' }}>
+    <div style={{ fontFamily: 'monospace', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 90px)', overflow: 'hidden', background: '#0a0a0a' }}>
 
-      {/* Flash overlay on close */}
+      {/* Flash */}
       <AnimatePresence>
         {flash && (
-          <motion.div
-            initial={{ opacity: 0.4 }}
-            animate={{ opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 999, pointerEvents: 'none', background: flash === 'profit' ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,102,0.08)' }}
-          />
+          <motion.div initial={{ opacity: 0.3 }} animate={{ opacity: 0 }} transition={{ duration: 0.5 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 999, pointerEvents: 'none', background: flash === 'profit' ? 'rgba(0,255,136,0.07)' : 'rgba(255,68,102,0.07)' }} />
         )}
       </AnimatePresence>
 
-      {/* ── TOP STATUS BAR ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0', borderBottom: '1px solid rgba(232,200,74,0.1)', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', padding: '0 16px', height: '36px', flexWrap: 'wrap' }}>
-        {/* Wick sim badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '16px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-          <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.2, repeat: Infinity }}
-            style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00ff88' }} />
-          <span style={{ fontSize: '10px', fontWeight: '800', color: '#00ff88', letterSpacing: '2px' }}>SIMULATOR LIVE</span>
+      {/* ── TOP BAR ── */}
+      <div style={{ height: '42px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '0', flexShrink: 0, background: '#0d0d0d' }}>
+
+        {/* Balance selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0', borderRight: '1px solid rgba(255,255,255,0.06)', height: '100%' }}>
+          {BALANCE_OPTIONS.map(b => (
+            <button key={b} onClick={() => { setStartingBalance(b); setBalance(b); setPositions([]); setHistory([]) }}
+              style={{ padding: '0 16px', height: '100%', background: startingBalance === b ? 'rgba(232,200,74,0.1)' : 'transparent', border: 'none', borderBottom: startingBalance === b ? '2px solid #e8c84a' : '2px solid transparent', color: startingBalance === b ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px', transition: 'all 0.15s' }}>
+              ${(b / 1000).toFixed(0)}K
+            </button>
+          ))}
         </div>
 
-        {/* Balance */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '0 16px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-          <StatCell label="Balance" value={`$${balance.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="#e8c84a" />
-          <StatCell label="Open P&L" value={`${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`} color={totalPnl >= 0 ? '#00ff88' : '#ff4466'} />
-          <StatCell label="Equity" value={`$${(balance + totalPnl).toFixed(2)}`} color="#e0e0e0" />
-          <StatCell label="Positions" value={positions.length} />
-        </div>
+        {/* Stats */}
+        {[
+          { label: 'BALANCE', value: `$${balance.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: '#e8c84a' },
+          { label: 'OPEN P&L', value: `${openPnl >= 0 ? '+' : ''}$${openPnl.toFixed(2)}`, color: openPnl >= 0 ? '#00ff88' : '#ff4466' },
+          { label: 'EQUITY', value: `$${(balance + openPnl).toFixed(2)}`, color: '#e0e0e0' },
+          { label: 'POSITIONS', value: positions.length, color: positions.length > 0 ? '#e8c84a' : 'rgba(255,255,255,0.3)' },
+        ].map(s => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.06)', height: '100%' }}>
+            <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '1.5px' }}>{s.label}</span>
+            <span style={{ fontSize: '13px', fontWeight: '800', color: s.color }}>{s.value}</span>
+          </div>
+        ))}
 
         {/* Live price */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px' }}>
-          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>{selectedAsset.label}</span>
-          <motion.span
-            key={currentPrice}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', marginLeft: 'auto' }}>
+          <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1, repeat: Infinity }}
+            style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00ff88' }} />
+          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>{asset.label}</span>
+          <motion.span key={price}
             animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e0e0e0' }}
-            transition={{ duration: 0.3 }}
-            style={{ fontSize: '13px', fontWeight: '800', fontFamily: 'monospace' }}
-          >
-            {currentPrice.toFixed(decimals)}
+            transition={{ duration: 0.2 }}
+            style={{ fontSize: '14px', fontWeight: '800' }}>
+            {price.toFixed(decimals)}
           </motion.span>
           {priceDir === 'up' ? <TrendingUp size={12} color="#00ff88" /> : priceDir === 'down' ? <TrendingDown size={12} color="#ff4466" /> : null}
         </div>
 
-        <div style={{ marginLeft: 'auto', fontSize: '10px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>
-          WICK PAPER TRADING — NOT FINANCIAL ADVICE
+        <div style={{ padding: '0 16px', fontSize: '9px', color: 'rgba(255,255,255,0.15)', letterSpacing: '1px' }}>
+          PAPER TRADING ONLY
         </div>
       </div>
 
-      {/* ── MAIN GRID ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 280px', gap: '0', height: 'calc(100vh - 160px)', minHeight: '600px' }}>
+      {/* ── MAIN BODY ── */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '180px 1fr 240px', overflow: 'hidden', minHeight: 0 }}>
 
-        {/* ── LEFT PANEL: Asset selector + Order entry ── */}
-        <div style={{ borderRight: '1px solid rgba(232,200,74,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
+        {/* ── LEFT: Asset list ── */}
+        <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Category tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
             {Object.keys(ASSETS).map(cat => (
-              <button key={cat} onClick={() => handleCategoryChange(cat)}
-                style={{ flex: 1, padding: '8px 4px', background: category === cat ? 'rgba(232,200,74,0.08)' : 'transparent', border: 'none', borderBottom: category === cat ? '2px solid #e8c84a' : '2px solid transparent', color: category === cat ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.15s' }}>
-                {cat}
+              <button key={cat} onClick={() => { setCategory(cat); setAsset(ASSETS[cat][0]) }}
+                style={{ flex: 1, padding: '8px 2px', background: 'transparent', border: 'none', borderBottom: category === cat ? '2px solid #e8c84a' : '2px solid transparent', color: category === cat ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '8px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase' }}>
+                {cat === 'stocks' ? 'EQ' : cat.slice(0, 2).toUpperCase()}
               </button>
             ))}
           </div>
 
-          {/* Asset list */}
+          {/* Asset rows */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {ASSETS[category].map(asset => (
-              <motion.button key={asset.symbol} whileTap={{ scale: 0.98 }}
-                onClick={() => setSelectedAsset(asset)}
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: selectedAsset.symbol === asset.symbol ? 'rgba(232,200,74,0.06)' : 'transparent', border: 'none', borderLeft: selectedAsset.symbol === asset.symbol ? '2px solid #e8c84a' : '2px solid transparent', cursor: 'pointer', transition: 'all 0.15s' }}>
-                <span style={{ fontSize: '12px', fontWeight: '700', color: selectedAsset.symbol === asset.symbol ? '#e8c84a' : '#e0e0e0', fontFamily: 'monospace' }}>{asset.label}</span>
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
-                  {(BASE_PRICES[asset.symbol] || 0).toFixed(asset.pip < 0.001 ? 5 : asset.pip < 0.1 ? 4 : 2)}
+            {ASSETS[category].map(a => (
+              <button key={a.symbol} onClick={() => setAsset(a)}
+                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: asset.symbol === a.symbol ? 'rgba(232,200,74,0.07)' : 'transparent', border: 'none', borderLeft: asset.symbol === a.symbol ? '2px solid #e8c84a' : '2px solid transparent', cursor: 'pointer', transition: 'all 0.1s' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: asset.symbol === a.symbol ? '#e8c84a' : '#c0c0c0' }}>{a.label}</span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
+                  {(BASE_PRICES[a.symbol] || 0).toFixed(a.pip < 0.001 ? 4 : a.pip < 0.1 ? 2 : 2)}
                 </span>
-              </motion.button>
+              </button>
             ))}
           </div>
+        </div>
 
-          {/* Order entry */}
-          <div style={{ borderTop: '1px solid rgba(232,200,74,0.1)', padding: '14px', background: 'rgba(0,0,0,0.3)' }}>
-            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px', marginBottom: '10px', textTransform: 'uppercase' }}>New Order — {selectedAsset.label}</div>
+        {/* ── CENTER: Chart ── */}
+        <div style={{ overflow: 'hidden', minHeight: 0 }}>
+          <TradingViewChart symbol={asset.symbol} />
+        </div>
 
-            {/* Long / Short */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+        {/* ── RIGHT: Order panel ── */}
+        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+          {/* Order header */}
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '2px', marginBottom: '10px' }}>ORDER ENTRY</div>
+
+            {/* Direction */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
               {['long', 'short'].map(d => (
                 <motion.button key={d} whileTap={{ scale: 0.96 }} onClick={() => setDirection(d)}
-                  style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,102,0.1)') : 'transparent', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontFamily: 'monospace' }}>
+                  style={{ padding: '10px 0', borderRadius: '8px', border: `1px solid ${direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.08)'}`, background: direction === d ? (d === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)') : 'rgba(255,255,255,0.02)', color: direction === d ? (d === 'long' ? '#00ff88' : '#ff4466') : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                   {d === 'long' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
                   {d.toUpperCase()}
                 </motion.button>
@@ -350,108 +304,155 @@ export default function SimulatorPage({ user }) {
             </div>
 
             {/* Size */}
-            <div style={{ marginBottom: '8px' }}>
-              <label style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>SIZE ($)</label>
-              <input type="number" value={size} onChange={e => setSize(e.target.value)} placeholder="1000"
-                style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#e0e0e0', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '1.5px', display: 'block', marginBottom: '5px' }}>POSITION SIZE ($)</label>
+              <input type="number" value={size} onChange={e => setSize(e.target.value)}
+                style={{ width: '100%', padding: '9px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#e0e0e0', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
             </div>
 
             {/* SL / TP */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '14px' }}>
               <div>
-                <label style={{ fontSize: '9px', color: '#ff4466', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>STOP LOSS</label>
-                <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="Optional"
-                  style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,68,102,0.04)', border: '1px solid rgba(255,68,102,0.15)', borderRadius: '6px', color: '#ff4466', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                <label style={{ fontSize: '9px', color: '#ff6680', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>STOP LOSS</label>
+                <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="—"
+                  style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,68,102,0.04)', border: '1px solid rgba(255,68,102,0.15)', borderRadius: '6px', color: '#ff6680', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
               </div>
               <div>
-                <label style={{ fontSize: '9px', color: '#00ff88', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>TAKE PROFIT</label>
-                <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="Optional"
-                  style={{ width: '100%', padding: '8px 10px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '6px', color: '#00ff88', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                <label style={{ fontSize: '9px', color: '#00cc6a', letterSpacing: '1px', display: 'block', marginBottom: '4px' }}>TAKE PROFIT</label>
+                <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="—"
+                  style={{ width: '100%', padding: '7px 8px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '6px', color: '#00cc6a', fontSize: '11px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
               </div>
+            </div>
+
+            {/* Market price */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>MARKET</span>
+              <motion.span key={price}
+                animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e8c84a' }}
+                style={{ fontSize: '14px', fontWeight: '800' }}>
+                {price.toFixed(decimals)}
+              </motion.span>
             </div>
 
             {/* Execute */}
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleOpenPosition}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #00cc6a, #00ff88)' : 'linear-gradient(135deg, #cc2244, #ff4466)', color: '#000', fontSize: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '2px', fontFamily: 'monospace', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleExecute}
+              style={{ width: '100%', padding: '13px', borderRadius: '8px', border: 'none', background: direction === 'long' ? 'linear-gradient(135deg, #00aa55, #00ff88)' : 'linear-gradient(135deg, #cc2244, #ff4466)', color: '#000', fontSize: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Zap size={13} />
-              EXECUTE {direction.toUpperCase()}
+              {direction === 'long' ? 'BUY LONG' : 'SELL SHORT'}
             </motion.button>
+          </div>
 
-            <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>MARKET PRICE</span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#e8c84a', fontFamily: 'monospace' }}>{currentPrice.toFixed(decimals)}</span>
+          {/* Open positions list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '2px', marginBottom: '8px', paddingLeft: '2px' }}>
+              OPEN POSITIONS {positions.length > 0 && `(${positions.length})`}
             </div>
-          </div>
-        </div>
-
-        {/* ── CENTER: Chart ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <TradingViewChart symbol={selectedAsset.symbol} />
-          </div>
-        </div>
-
-        {/* ── RIGHT PANEL: Positions + History ── */}
-        <div style={{ borderLeft: '1px solid rgba(232,200,74,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-          {/* Open positions */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Activity size={11} color="#e8c84a" />
-            <span style={{ fontSize: '10px', fontWeight: '700', color: '#e8c84a', letterSpacing: '1.5px' }}>OPEN POSITIONS</span>
-            {positions.length > 0 && (
-              <span style={{ marginLeft: 'auto', padding: '1px 6px', borderRadius: '10px', background: 'rgba(232,200,74,0.15)', color: '#e8c84a', fontSize: '10px', fontWeight: '700' }}>{positions.length}</span>
-            )}
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <AnimatePresence>
               {positions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>
-                  No open positions.<br />Execute a trade to begin.
+                <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.15)', fontSize: '11px', lineHeight: 1.6 }}>
+                  No open positions.<br />Execute a trade above.
                 </div>
-              ) : (
-                positions.map(pos => (
-                  <PositionCard key={pos.id} pos={pos} currentPrice={currentPrice} onClose={handleClosePosition} />
-                ))
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Closed trades / history */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', maxHeight: '280px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={11} color="rgba(255,255,255,0.3)" />
-              <span style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '1.5px' }}>TRADE HISTORY</span>
-              {logSaved && <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#00ff88', fontWeight: '700' }}>✓ LOGGED</span>}
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-              {closedTrades.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>No closed trades yet.</div>
-              ) : (
-                [...closedTrades].reverse().map((trade, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', marginBottom: '4px', border: `1px solid ${trade.pnl >= 0 ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,102,0.08)'}` }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              ) : positions.map(pos => {
+                const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
+                const pnl = (diff / pos.entry) * pos.size * 1000
+                const pips = diff / pos.asset.pip
+                const profit = pnl >= 0
+                return (
+                  <motion.div key={pos.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
+                    style={{ background: profit ? 'rgba(0,255,136,0.04)' : 'rgba(255,68,102,0.04)', border: `1px solid ${profit ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)'}`, borderRadius: '8px', padding: '10px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', fontWeight: '700', color: trade.direction === 'long' ? '#00ff88' : '#ff4466', fontFamily: 'monospace' }}>{trade.direction.toUpperCase()}</span>
-                        <span style={{ fontSize: '11px', color: '#e0e0e0', fontFamily: 'monospace' }}>{trade.asset.label}</span>
+                        <span style={{ fontSize: '9px', fontWeight: '800', padding: '2px 6px', borderRadius: '3px', background: pos.direction === 'long' ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,102,0.15)', color: pos.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px' }}>
+                          {pos.direction.toUpperCase()}
+                        </span>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#e0e0e0' }}>{pos.asset.label}</span>
                       </div>
-                      <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)' }}>{trade.closedAt?.toLocaleTimeString()}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: trade.pnl >= 0 ? '#00ff88' : '#ff4466', fontFamily: 'monospace' }}>
-                        {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
-                      </span>
-                      <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleLogSession(trade)}
-                        style={{ padding: '2px 8px', borderRadius: '4px', background: 'rgba(232,200,74,0.1)', border: '1px solid rgba(232,200,74,0.2)', color: '#e8c84a', fontSize: '9px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px', fontFamily: 'monospace' }}>
-                        LOG
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleClose(pos.id)}
+                        style={{ background: 'rgba(255,68,102,0.12)', border: '1px solid rgba(255,68,102,0.25)', borderRadius: '5px', padding: '3px 10px', color: '#ff4466', fontSize: '10px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px' }}>
+                        CLOSE
                       </motion.button>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                      <div>
+                        <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px', marginBottom: '2px' }}>ENTRY</div>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#c0c0c0' }}>{pos.entry.toFixed(decimals)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px', marginBottom: '2px' }}>P&L</div>
+                        <motion.div key={pnl.toFixed(0)} style={{ fontSize: '13px', fontWeight: '800', color: profit ? '#00ff88' : '#ff4466' }}>
+                          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        </motion.div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
           </div>
         </div>
+      </div>
+
+      {/* ── BOTTOM: Trade history ── */}
+      <div style={{ height: '140px', borderTop: '1px solid rgba(255,255,255,0.06)', background: '#0d0d0d', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '6px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,255,255,0.25)', letterSpacing: '2px' }}>TRADE HISTORY</span>
+          {history.length > 0 && (
+            <>
+              <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.15)' }}>
+                {history.length} trade{history.length !== 1 ? 's' : ''} •{' '}
+                Net: <span style={{ color: history.reduce((s, t) => s + t.pnl, 0) >= 0 ? '#00ff88' : '#ff4466', fontWeight: '700' }}>
+                  {history.reduce((s, t) => s + t.pnl, 0) >= 0 ? '+' : ''}${history.reduce((s, t) => s + t.pnl, 0).toFixed(2)}
+                </span>
+              </span>
+            </>
+          )}
+        </div>
+
+        {history.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.12)', fontSize: '11px' }}>
+            No closed trades yet.
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  {['ASSET', 'DIR', 'ENTRY', 'EXIT', 'P&L', 'TIME', 'ACTION'].map(h => (
+                    <th key={h} style={{ padding: '4px 14px', textAlign: 'left', fontSize: '8px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1.5px', fontWeight: '700', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((t, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                    <td style={{ padding: '6px 14px', color: '#c0c0c0', fontWeight: '700' }}>{t.asset.label}</td>
+                    <td style={{ padding: '6px 14px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', padding: '2px 6px', borderRadius: '3px', background: t.direction === 'long' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,102,0.12)', color: t.direction === 'long' ? '#00ff88' : '#ff4466', letterSpacing: '1px' }}>
+                        {t.direction.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ padding: '6px 14px', color: 'rgba(255,255,255,0.4)' }}>{t.entry.toFixed(t.asset.pip < 0.001 ? 5 : t.asset.pip < 0.1 ? 4 : 2)}</td>
+                    <td style={{ padding: '6px 14px', color: 'rgba(255,255,255,0.4)' }}>{t.closePrice?.toFixed(t.asset.pip < 0.001 ? 5 : t.asset.pip < 0.1 ? 4 : 2)}</td>
+                    <td style={{ padding: '6px 14px', fontWeight: '800', color: t.pnl >= 0 ? '#00ff88' : '#ff4466' }}>
+                      {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '6px 14px', color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap' }}>
+                      {t.closedAt?.toLocaleTimeString()}
+                    </td>
+                    <td style={{ padding: '6px 14px' }}>
+                      <motion.button whileTap={{ scale: 0.95 }}
+                        onClick={() => handleLog(t)}
+                        disabled={loggedIds.has(t.id)}
+                        style={{ padding: '3px 10px', borderRadius: '4px', background: loggedIds.has(t.id) ? 'rgba(0,255,136,0.08)' : 'rgba(232,200,74,0.1)', border: `1px solid ${loggedIds.has(t.id) ? 'rgba(0,255,136,0.2)' : 'rgba(232,200,74,0.2)'}`, color: loggedIds.has(t.id) ? '#00ff88' : '#e8c84a', fontSize: '9px', fontWeight: '700', cursor: loggedIds.has(t.id) ? 'default' : 'pointer', letterSpacing: '1px' }}>
+                        {loggedIds.has(t.id) ? '✓ LOGGED' : 'LOG SESSION'}
+                      </motion.button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
