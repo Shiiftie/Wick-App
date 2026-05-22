@@ -216,7 +216,7 @@ function AppShell({ user }) {
       <CandleBackground />
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
-        <main style={{ paddingTop: '88px' }}>
+        <main style={{ paddingTop: 'calc(env(safe-area-inset-top) + 88px)' }}>
           <div style={{ maxWidth: isFullWidth ? '100%' : '1100px', margin: '0 auto', padding: '24px' }}>
             <AnimatePresence mode="wait">
               <motion.div key={view} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
