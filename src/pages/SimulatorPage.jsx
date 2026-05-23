@@ -113,143 +113,33 @@ const TOOL_GROUPS = [
 
 // ─── HOOKS ─────────────────────────────────────────────────────────
 
-// Global price store — shared across all instances
-const TV_PRICES = {}
-const TV_LISTENERS = {}
+// ─── LIVE PRICE VIA SUPABASE EDGE FUNCTION ─────────────────────────
+// Calls our price-proxy edge function which fetches from Binance/Yahoo
+// server-side — no CORS issues since it's our own Supabase project.
 
-function notifyPriceListeners(symbol, price) {
-  if (TV_LISTENERS[symbol]) {
-    TV_LISTENERS[symbol].forEach(fn => fn(price))
-  }
-}
+const SUPABASE_URL = 'https://hhxxrhtzhfmfudpmznkx.supabase.co'
 
-// Hidden TradingView single-quote widget injects real prices via postMessage
 function useLivePrice(symbol) {
   const [price, setPrice] = useState(BASE_PRICES[symbol] || 100)
-  const containerRef = useRef(null)
-  const scriptRef = useRef(null)
 
   useEffect(() => {
-    // Reset to base on symbol change
-    const base = BASE_PRICES[symbol] || 100
-    setPrice(TV_PRICES[symbol] || base)
+    setPrice(BASE_PRICES[symbol] || 100)
 
-    // Register listener
-    if (!TV_LISTENERS[symbol]) TV_LISTENERS[symbol] = new Set()
-    const listener = (p) => { TV_PRICES[symbol] = p; setPrice(p) }
-    TV_LISTENERS[symbol].add(listener)
-
-    // Inject hidden TradingView ticker tape for this symbol to get real price
-    if (!containerRef.current) {
-      containerRef.current = document.createElement('div')
-      containerRef.current.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;'
-      document.body.appendChild(containerRef.current)
-    }
-
-    containerRef.current.innerHTML = ''
-    if (scriptRef.current) scriptRef.current = null
-
-    const script = document.createElement('script')
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      symbol,
-      width: 200,
-      height: 60,
-      locale: 'en',
-      colorTheme: 'dark',
-      isTransparent: false,
-      autosize: false,
-    })
-    containerRef.current.appendChild(script)
-    scriptRef.current = script
-
-    // Listen for postMessage from TradingView widgets
-    const handleMessage = (e) => {
+    const fetchPrice = async () => {
       try {
-        if (!e.data) return
-        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
-        // TradingView sends price data in various message formats
-        if (d?.name === 'tv-widget-quote' || d?.type === 'price') {
-          const p = d?.price || d?.data?.price
-          if (p && p > 0) notifyPriceListeners(symbol, parseFloat(p))
-        }
-        // Also intercept chart widget price updates
-        if (d?.data?.price && typeof d.data.price === 'number' && d.data.price > 0) {
-          notifyPriceListeners(symbol, d.data.price)
-        }
+        const res = await fetch(
+          `${SUPABASE_URL}/functions/v1/price-proxy?symbol=${encodeURIComponent(symbol)}`,
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.price && data.price > 0) setPrice(data.price)
       } catch {}
     }
-    window.addEventListener('message', handleMessage)
 
-    // Fallback: use a proxy-friendly endpoint via allorigins
-    const FINNHUB_MAP = {
-      'FX:EURUSD': 'OANDA:EUR_USD', 'FX:GBPUSD': 'OANDA:GBP_USD',
-      'FX:USDJPY': 'OANDA:USD_JPY', 'FX:AUDUSD': 'OANDA:AUD_USD',
-      'FX:USDCAD': 'OANDA:USD_CAD', 'FX:USDCHF': 'OANDA:USD_CHF',
-      'NASDAQ:AAPL': 'AAPL', 'NASDAQ:TSLA': 'TSLA',
-      'NASDAQ:NVDA': 'NVDA', 'CME_MINI:ES1!': 'ES=F',
-      'CME_MINI:NQ1!': 'NQ=F', 'AMEX:SPY': 'SPY',
-      'BINANCE:BTCUSDT': 'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT': 'BINANCE:ETHUSDT',
-      'BINANCE:SOLUSDT': 'BINANCE:SOLUSDT', 'BINANCE:XRPUSDT': 'BINANCE:XRPUSDT',
-    }
-
-    // Use Binance public API for crypto (no CORS issues)
-    const BINANCE_MAP = {
-      'BINANCE:BTCUSDT': 'BTCUSDT',
-      'BINANCE:ETHUSDT': 'ETHUSDT',
-      'BINANCE:SOLUSDT': 'SOLUSDT',
-      'BINANCE:XRPUSDT': 'XRPUSDT',
-    }
-
-    let iv = null
-    const binanceTicker = BINANCE_MAP[symbol]
-    if (binanceTicker) {
-      const fetchBinance = async () => {
-        try {
-          const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceTicker}`)
-          if (!res.ok) return
-          const data = await res.json()
-          const p = parseFloat(data.price)
-          if (p > 0) { TV_PRICES[symbol] = p; setPrice(p) }
-        } catch {}
-      }
-      fetchBinance()
-      iv = setInterval(fetchBinance, 5000)
-    } else {
-      // For stocks/forex — use a CORS proxy to Yahoo Finance
-      const YAHOO_MAP = {
-        'FX:EURUSD': 'EURUSD=X', 'FX:GBPUSD': 'GBPUSD=X',
-        'FX:USDJPY': 'JPY=X', 'FX:AUDUSD': 'AUDUSD=X',
-        'FX:USDCAD': 'CAD=X', 'FX:USDCHF': 'CHF=X',
-        'NASDAQ:AAPL': 'AAPL', 'NASDAQ:TSLA': 'TSLA',
-        'NASDAQ:NVDA': 'NVDA', 'CME_MINI:ES1!': 'ES=F',
-        'CME_MINI:NQ1!': 'NQ=F', 'AMEX:SPY': 'SPY',
-      }
-      const yticker = YAHOO_MAP[symbol]
-      if (yticker) {
-        const fetchPrice = async () => {
-          try {
-            // Use allorigins.win as CORS proxy
-            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yticker}?interval=1m&range=1d`
-            const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-            const res = await fetch(proxy)
-            if (!res.ok) return
-            const data = await res.json()
-            const p = data?.chart?.result?.[0]?.meta?.regularMarketPrice
-            if (p && p > 0) { TV_PRICES[symbol] = p; setPrice(p) }
-          } catch {}
-        }
-        fetchPrice()
-        iv = setInterval(fetchPrice, 10000)
-      }
-    }
-
-    return () => {
-      TV_LISTENERS[symbol]?.delete(listener)
-      window.removeEventListener('message', handleMessage)
-      if (iv) clearInterval(iv)
-    }
+    fetchPrice()
+    const iv = setInterval(fetchPrice, 5000)
+    return () => clearInterval(iv)
   }, [symbol])
 
   return price
@@ -470,7 +360,7 @@ function SLTPOverlay({ price, sl, setSl, tp, setTp, positions, decimals }) {
     if (containerH === 0 || y < 14 || y > containerH - 14) return null
 
     const pnlEst = hasPosition
-      ? ((positions[0].direction === 'long' ? val - positions[0].entry : positions[0].entry - val) / positions[0].entry * positions[0].size * 1000)
+      ? ((positions[0].direction === 'long' ? val - positions[0].entry : positions[0].entry - val) / positions[0].entry * positions[0].size)
       : null
 
     return (
@@ -573,7 +463,7 @@ export default function SimulatorPage({ user }) {
 
   const openPnl = positions.reduce((sum, p) => {
     const diff = p.direction === 'long' ? price - p.entry : p.entry - price
-    return sum + (diff / p.entry) * p.size * 1000
+    return sum + (diff / p.entry) * p.size
   }, 0)
 
   // Auto-close all positions if daily loss limit hit
@@ -583,7 +473,7 @@ export default function SimulatorPage({ user }) {
       setRiskWarning('Daily loss limit reached. All positions closed.')
       positions.forEach(pos => {
         const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-        const pnl = (diff / pos.entry) * pos.size * 1000
+        const pnl = (diff / pos.entry) * pos.size
         setBalance(b => b + pnl)
         setHistory(h => [{ ...pos, closePrice: price, pnl, closedAt: new Date(), autoClose: true }, ...h])
       })
@@ -614,7 +504,7 @@ export default function SimulatorPage({ user }) {
     const pos = positions.find(p => p.id === id)
     if (!pos) return
     const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-    const pnl = (diff / pos.entry) * pos.size * 1000
+    const pnl = (diff / pos.entry) * pos.size
     setFlash(pnl >= 0 ? 'profit' : 'loss')
     setTimeout(() => setFlash(null), 500)
     setBalance(b => b + pnl)
@@ -937,7 +827,7 @@ export default function SimulatorPage({ user }) {
               <AnimatePresence>
                 {positions.map(pos => {
                   const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-                  const pnl = (diff / pos.entry) * pos.size * 1000
+                  const pnl = (diff / pos.entry) * pos.size
                   const profit = pnl >= 0
                   const color = profit ? '#00ff88' : '#ff4466'
                   return (
@@ -959,19 +849,32 @@ export default function SimulatorPage({ user }) {
                           <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.18)', marginBottom: '1px' }}>ENTRY</div>
                           <div style={{ fontSize: '10px', fontWeight: '700', color: '#808080' }}>{pos.entry.toFixed(decimals)}</div>
                         </div>
-                        {pos.sl && (
-                          <div>
-                            <div style={{ fontSize: '7px', color: '#ff6680', marginBottom: '1px' }}>SL</div>
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: '#ff6680' }}>{pos.sl.toFixed(decimals)}</div>
-                          </div>
-                        )}
-                        {pos.tp && (
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '7px', color: '#00cc6a', marginBottom: '1px' }}>TP</div>
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: '#00cc6a' }}>{pos.tp.toFixed(decimals)}</div>
-                          </div>
-                        )}
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.18)', marginBottom: '1px' }}>LIVE</div>
+                          <motion.div key={price} animate={{ color: priceDir === 'up' ? '#00ff88' : priceDir === 'down' ? '#ff4466' : '#e0e0e0' }}
+                            style={{ fontSize: '10px', fontWeight: '800' }}>{price.toFixed(decimals)}</motion.div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.18)', marginBottom: '1px' }}>SIZE</div>
+                          <div style={{ fontSize: '10px', fontWeight: '700', color: '#808080' }}>${pos.size.toLocaleString()}</div>
+                        </div>
                       </div>
+                      {(pos.sl || pos.tp) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          {pos.sl && (
+                            <div>
+                              <div style={{ fontSize: '7px', color: '#ff6680', marginBottom: '1px' }}>SL</div>
+                              <div style={{ fontSize: '10px', fontWeight: '700', color: '#ff6680' }}>{pos.sl.toFixed(decimals)}</div>
+                            </div>
+                          )}
+                          {pos.tp && (
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '7px', color: '#00cc6a', marginBottom: '1px' }}>TP</div>
+                              <div style={{ fontSize: '10px', fontWeight: '700', color: '#00cc6a' }}>{pos.tp.toFixed(decimals)}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => handleClose(pos.id)}
                         style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid rgba(255,68,102,0.3)', background: 'rgba(255,68,102,0.08)', color: '#ff4466', fontSize: '10px', fontWeight: '800', cursor: 'pointer', letterSpacing: '1.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.15s' }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,68,102,0.18)'; e.currentTarget.style.borderColor = '#ff4466' }}
