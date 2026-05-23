@@ -50,7 +50,20 @@ function calcPnL(asset, direction, entry, current, size) {
   return diff * size
 }
 
+const BALANCE_OPTIONS = [
+  { value: 10000,  label: '$10K',  subtitle: 'Starter' },
+  { value: 25000,  label: '$25K',  subtitle: 'Intermediate' },
+  { value: 50000,  label: '$50K',  subtitle: 'Advanced' },
+  { value: 100000, label: '$100K', subtitle: 'Pro' },
+]
 
+// Risk management rules per account size
+const RISK_RULES = {
+  10000:  { maxDailyLoss: 500,   maxDrawdown: 1000,  maxPositionSize: 2000 },
+  25000:  { maxDailyLoss: 1250,  maxDrawdown: 2500,  maxPositionSize: 5000 },
+  50000:  { maxDailyLoss: 2500,  maxDrawdown: 5000,  maxPositionSize: 10000 },
+  100000: { maxDailyLoss: 5000,  maxDrawdown: 10000, maxPositionSize: 20000 },
+}
 
 const TOOL_GROUPS = [
   {
@@ -457,7 +470,7 @@ export default function SimulatorPage({ user }) {
 
   const openPnl = positions.reduce((sum, p) => {
     const diff = p.direction === 'long' ? price - p.entry : p.entry - price
-    return sum + (p.asset && p.asset.unitType === "lot" ? (((p.direction==="long"?price-p.entry:p.entry-price)/p.asset.pip)*p.asset.pnlPerUnit*p.size) : p.asset && p.asset.unitType === "contract" ? ((p.direction==="long"?price-p.entry:p.entry-price)*p.asset.pnlPerUnit*p.size) : (p.direction==="long"?price-p.entry:p.entry-price)*p.size)
+    return sum + calcPnL(p.asset, p.direction, p.entry, price, p.size)
   }, 0)
 
   // Auto-close all positions if daily loss limit hit
@@ -467,7 +480,7 @@ export default function SimulatorPage({ user }) {
       setRiskWarning('Daily loss limit reached. All positions closed.')
       positions.forEach(pos => {
         const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-        const pnl = (pos.asset && pos.asset.unitType === "lot" ? (((pos.direction==="long"?price-pos.entry:pos.entry-price)/pos.asset.pip)*pos.asset.pnlPerUnit*pos.size) : pos.asset && pos.asset.unitType === "contract" ? ((pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.asset.pnlPerUnit*pos.size) : (pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.size)
+        const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
         setBalance(b => b + pnl)
         setHistory(h => [{ ...pos, closePrice: price, pnl, closedAt: new Date(), autoClose: true }, ...h])
       })
@@ -486,7 +499,7 @@ export default function SimulatorPage({ user }) {
     }
     setPositions(prev => [...prev, {
       id: Date.now(), asset, direction,
-      entry: price, size: posSize, asset: {...asset}, asset: asset,
+      entry: price, size: posSize,
       sl: sl ? parseFloat(sl) : null,
       tp: tp ? parseFloat(tp) : null,
       openedAt: new Date(),
@@ -498,7 +511,7 @@ export default function SimulatorPage({ user }) {
     const pos = positions.find(p => p.id === id)
     if (!pos) return
     const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-    const pnl = (pos.asset && pos.asset.unitType === "lot" ? (((pos.direction==="long"?price-pos.entry:pos.entry-price)/pos.asset.pip)*pos.asset.pnlPerUnit*pos.size) : pos.asset && pos.asset.unitType === "contract" ? ((pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.asset.pnlPerUnit*pos.size) : (pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.size)
+    const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
     setFlash(pnl >= 0 ? 'profit' : 'loss')
     setTimeout(() => setFlash(null), 500)
     setBalance(b => b + pnl)
@@ -821,7 +834,7 @@ export default function SimulatorPage({ user }) {
               <AnimatePresence>
                 {positions.map(pos => {
                   const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-                  const pnl = (pos.asset && pos.asset.unitType === "lot" ? (((pos.direction==="long"?price-pos.entry:pos.entry-price)/pos.asset.pip)*pos.asset.pnlPerUnit*pos.size) : pos.asset && pos.asset.unitType === "contract" ? ((pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.asset.pnlPerUnit*pos.size) : (pos.direction==="long"?price-pos.entry:pos.entry-price)*pos.size)
+                  const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
                   const profit = pnl >= 0
                   const color = profit ? '#00ff88' : '#ff4466'
                   return (
