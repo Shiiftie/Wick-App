@@ -121,21 +121,27 @@ const SUPABASE_URL = 'https://hhxxrhtzhfmfudpmznkx.supabase.co'
 
 function useLivePrice(symbol) {
   const [price, setPrice] = useState(BASE_PRICES[symbol] || 100)
+
   useEffect(() => {
     setPrice(BASE_PRICES[symbol] || 100)
+
     const fetchPrice = async () => {
       try {
         const res = await fetch(
-          'https://hhxxrhtzhfmfudpmznkx.supabase.co/functions/v1/price-proxy?symbol=' + encodeURIComponent(symbol)
+          `${SUPABASE_URL}/functions/v1/price-proxy?symbol=${encodeURIComponent(symbol)}`,
+          { headers: { 'Content-Type': 'application/json' } }
         )
+        if (!res.ok) return
         const data = await res.json()
         if (data.price && data.price > 0) setPrice(data.price)
-      } catch(e) {}
+      } catch {}
     }
+
     fetchPrice()
     const iv = setInterval(fetchPrice, 5000)
     return () => clearInterval(iv)
   }, [symbol])
+
   return price
 }
 
