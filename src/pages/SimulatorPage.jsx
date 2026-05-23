@@ -115,19 +115,56 @@ const TOOL_GROUPS = [
 
 function useLivePrice(symbol) {
   const [price, setPrice] = useState(BASE_PRICES[symbol] || 100)
-  const ref = useRef(BASE_PRICES[symbol] || 100)
+  const priceRef = useRef(BASE_PRICES[symbol] || 100)
+
   useEffect(() => {
+    // Reset to base price immediately on symbol change
     const base = BASE_PRICES[symbol] || 100
-    ref.current = base
+    priceRef.current = base
     setPrice(base)
-    const vol = base > 10000 ? 0.0003 : base > 100 ? 0.0002 : base > 1 ? 0.0001 : 0.00006
-    const iv = setInterval(() => {
-      ref.current = Math.max(ref.current + ref.current * vol * (Math.random() - 0.499), 0.0001)
-      const d = base > 1000 ? 2 : base > 10 ? 2 : base > 1 ? 4 : 5
-      setPrice(parseFloat(ref.current.toFixed(d)))
-    }, 600)
+
+    // Map our symbol format to Yahoo Finance ticker
+    const YAHOO_MAP = {
+      'FX:EURUSD': 'EURUSD=X', 'FX:GBPUSD': 'GBPUSD=X',
+      'FX:USDJPY': 'JPY=X', 'FX:AUDUSD': 'AUDUSD=X',
+      'FX:USDCAD': 'CAD=X', 'FX:USDCHF': 'CHF=X',
+      'NASDAQ:AAPL': 'AAPL', 'NASDAQ:TSLA': 'TSLA',
+      'NASDAQ:NVDA': 'NVDA', 'CME_MINI:ES1!': 'ES=F',
+      'CME_MINI:NQ1!': 'NQ=F', 'AMEX:SPY': 'SPY',
+      'BINANCE:BTCUSDT': 'BTC-USD', 'BINANCE:ETHUSDT': 'ETH-USD',
+      'BINANCE:SOLUSDT': 'SOL-USD', 'BINANCE:XRPUSDT': 'XRP-USD',
+    }
+
+    const ticker = YAHOO_MAP[symbol]
+    if (!ticker) return
+
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m&range=1d`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const result = data?.chart?.result?.[0]
+        const meta = result?.meta
+        if (!meta) return
+        const livePrice = meta.regularMarketPrice || meta.previousClose
+        if (livePrice && livePrice > 0) {
+          priceRef.current = livePrice
+          setPrice(livePrice)
+        }
+      } catch (e) {
+        // silently keep last known price
+      }
+    }
+
+    fetchPrice()
+    // Refresh every 15 seconds for near-realtime updates
+    const iv = setInterval(fetchPrice, 15000)
     return () => clearInterval(iv)
   }, [symbol])
+
   return price
 }
 
@@ -508,7 +545,13 @@ export default function SimulatorPage({ user }) {
       <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', flexShrink: 0, background: '#0a0a0a', overflowX: 'auto' }}>
         <div style={{ display: 'flex', height: '100%', borderRight: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           {Object.keys(ASSETS).map(cat => (
-            <button key={cat} onClick={() => { setCategory(cat); setAsset(ASSETS[cat][0]) }}
+            <button key={cat} onClick={() => {
+              if (positions.length > 0) {
+                setRiskWarning('⚠️ Close all open positions before switching markets.'); setTimeout(() => setRiskWarning(null), 3000)
+                return
+              }
+              setCategory(cat); setAsset(ASSETS[cat][0])
+            }}
               style={{ padding: '0 16px', height: '100%', background: 'transparent', border: 'none', borderBottom: category === cat ? '2px solid #e8c84a' : '2px solid transparent', color: category === cat ? '#e8c84a' : 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer', textTransform: 'uppercase' }}>
               {cat === 'stocks' ? 'Equities' : cat === 'forex' ? 'Forex' : 'Crypto'}
             </button>
@@ -516,7 +559,13 @@ export default function SimulatorPage({ user }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px' }}>
           {ASSETS[category].map(a => (
-            <button key={a.symbol} onClick={() => setAsset(a)}
+            <button key={a.symbol} onClick={() => {
+              if (positions.length > 0) {
+                setRiskWarning('⚠️ Close all open positions before switching symbols.'); setTimeout(() => setRiskWarning(null), 3000)
+                return
+              }
+              setAsset(a)
+            }}
               style={{ padding: '5px 14px', borderRadius: '6px', border: `1px solid ${asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.08)'}`, background: asset.symbol === a.symbol ? 'rgba(232,200,74,0.12)' : 'transparent', color: asset.symbol === a.symbol ? '#e8c84a' : 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
               {a.label}
             </button>
