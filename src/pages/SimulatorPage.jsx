@@ -486,7 +486,7 @@ export default function SimulatorPage({ user }) {
     }
     setPositions(prev => [...prev, {
       id: Date.now(), asset, direction,
-      entry: price, size: posSize, asset: asset,
+      entry: price, size: posSize, asset: {...asset}, asset: asset,
       sl: sl ? parseFloat(sl) : null,
       tp: tp ? parseFloat(tp) : null,
       openedAt: new Date(),
