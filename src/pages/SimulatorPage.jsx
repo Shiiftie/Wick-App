@@ -50,22 +50,7 @@ function calcPnL(asset, direction, entry, current, size) {
   return diff * size
 }
 
-function calcPnL(a,dir,entry,cur,size){const d=dir=="long"?cur-entry:entry-cur;if(a&&a.unitType=="lot")return(d/a.pip)*a.pnlPerUnit*size;if(a&&a.unitType=="contract")return d*a.pnlPerUnit*size;return d*size;}
 
-const BALANCE_OPTIONS = [
-  { value: 10000,  label: '$10K',  subtitle: 'Starter' },
-  { value: 25000,  label: '$25K',  subtitle: 'Intermediate' },
-  { value: 50000,  label: '$50K',  subtitle: 'Advanced' },
-  { value: 100000, label: '$100K', subtitle: 'Pro' },
-]
-
-// Risk management rules per account size
-const RISK_RULES = {
-  10000:  { maxDailyLoss: 500,   maxDrawdown: 1000,  maxPositionSize: 2000 },
-  25000:  { maxDailyLoss: 1250,  maxDrawdown: 2500,  maxPositionSize: 5000 },
-  50000:  { maxDailyLoss: 2500,  maxDrawdown: 5000,  maxPositionSize: 10000 },
-  100000: { maxDailyLoss: 5000,  maxDrawdown: 10000, maxPositionSize: 20000 },
-}
 
 const TOOL_GROUPS = [
   {
