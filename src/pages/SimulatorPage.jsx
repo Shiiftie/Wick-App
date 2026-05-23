@@ -292,6 +292,161 @@ function ToolsGuide({ onClose }) {
   )
 }
 
+// ─── SL/TP DRAGGABLE OVERLAY ────────────────────────────────────────
+function SLTPOverlay({ price, sl, setSl, tp, setTp, positions, decimals }) {
+  const containerRef = useRef(null)
+  const dragging = useRef(null) // 'sl' | 'tp' | null
+  const startY = useRef(0)
+  const startPrice = useRef(0)
+
+  // Price range to display — show ±2% around current price
+  const range = price * 0.04
+  const minP = price - range
+  const maxP = price + range
+
+  const priceToY = useCallback((p, h) => {
+    return ((maxP - p) / (maxP - minP)) * h
+  }, [minP, maxP])
+
+  const yToPrice = useCallback((y, h) => {
+    return maxP - (y / h) * (maxP - minP)
+  }, [minP, maxP])
+
+  const onMouseDown = (e, type) => {
+    e.preventDefault()
+    dragging.current = type
+    startY.current = e.clientY
+    startPrice.current = type === 'sl' ? parseFloat(sl) : parseFloat(tp)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+  }
+
+  const onTouchStart = (e, type) => {
+    dragging.current = type
+    startY.current = e.touches[0].clientY
+    startPrice.current = type === 'sl' ? parseFloat(sl) : parseFloat(tp)
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', onMouseUp)
+  }
+
+  const onMouseMove = useCallback((e) => {
+    if (!dragging.current || !containerRef.current) return
+    const h = containerRef.current.getBoundingClientRect().height
+    const dy = e.clientY - startY.current
+    const dprice = -(dy / h) * (maxP - minP)
+    const newPrice = parseFloat((startPrice.current + dprice).toFixed(decimals))
+    if (dragging.current === 'sl') setSl(String(newPrice))
+    else setTp(String(newPrice))
+  }, [maxP, minP, decimals, setSl, setTp])
+
+  const onTouchMove = useCallback((e) => {
+    e.preventDefault()
+    if (!dragging.current || !containerRef.current) return
+    const h = containerRef.current.getBoundingClientRect().height
+    const dy = e.touches[0].clientY - startY.current
+    const dprice = -(dy / h) * (maxP - minP)
+    const newPrice = parseFloat((startPrice.current + dprice).toFixed(decimals))
+    if (dragging.current === 'sl') setSl(String(newPrice))
+    else setTp(String(newPrice))
+  }, [maxP, minP, decimals, setSl, setTp])
+
+  const onMouseUp = useCallback(() => {
+    dragging.current = null
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', onMouseUp)
+    window.removeEventListener('touchmove', onTouchMove)
+    window.removeEventListener('touchend', onMouseUp)
+  }, [onMouseMove, onTouchMove])
+
+  const slVal = parseFloat(sl)
+  const tpVal = parseFloat(tp)
+  const hasSL = sl && !isNaN(slVal) && slVal > 0
+  const hasTP = tp && !isNaN(tpVal) && tpVal > 0
+
+  // Only show overlay if there's an active position or pending SL/TP
+  const hasPosition = positions.length > 0
+  if (!hasSL && !hasTP) return null
+
+  return (
+    <div ref={containerRef} style={{
+      position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+      pointerEvents: 'none', zIndex: 10,
+    }}>
+      {/* Entry line — white dashed if position open */}
+      {hasPosition && positions[0] && (() => {
+        const h = containerRef.current?.getBoundingClientRect().height || 400
+        const y = priceToY(positions[0].entry, h)
+        if (y < 0 || y > h) return null
+        return (
+          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'none' }}>
+            <div style={{ borderTop: '1px dashed rgba(255,255,255,0.4)', width: '100%' }} />
+            <div style={{ position: 'absolute', right: 8, top: -10, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '3px', padding: '1px 7px', fontSize: '10px', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+              ENTRY {positions[0].entry.toFixed(decimals)}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* SL line — red */}
+      {hasSL && (() => {
+        const h = containerRef.current?.getBoundingClientRect().height || 400
+        const y = priceToY(slVal, h)
+        if (y < 10 || y > h - 10) return null
+        const pnlEst = hasPosition
+          ? ((positions[0].direction === 'long' ? slVal - positions[0].entry : positions[0].entry - slVal) / positions[0].entry * positions[0].size * 1000)
+          : null
+        return (
+          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'all', cursor: 'ns-resize' }}
+            onMouseDown={e => onMouseDown(e, 'sl')}
+            onTouchStart={e => onTouchStart(e, 'sl')}>
+            {/* Line */}
+            <div style={{ borderTop: '2px dashed #ff4466', width: '100%', opacity: 0.85 }} />
+            {/* Drag handle */}
+            <div style={{ position: 'absolute', left: '50%', top: -8, transform: 'translateX(-50%)', width: 24, height: 16, background: '#ff4466', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ns-resize', boxShadow: '0 0 8px rgba(255,68,102,0.5)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
+                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
+              </div>
+            </div>
+            {/* Label */}
+            <div style={{ position: 'absolute', right: 8, top: -11, background: 'rgba(255,68,102,0.9)', borderRadius: '3px', padding: '1px 8px', fontSize: '10px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span>SL {slVal.toFixed(decimals)}</span>
+              {pnlEst !== null && <span style={{ opacity: 0.8 }}>{pnlEst >= 0 ? '+' : ''}${pnlEst.toFixed(2)}</span>}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* TP line — green */}
+      {hasTP && (() => {
+        const h = containerRef.current?.getBoundingClientRect().height || 400
+        const y = priceToY(tpVal, h)
+        if (y < 10 || y > h - 10) return null
+        const pnlEst = hasPosition
+          ? ((positions[0].direction === 'long' ? tpVal - positions[0].entry : positions[0].entry - tpVal) / positions[0].entry * positions[0].size * 1000)
+          : null
+        return (
+          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'all', cursor: 'ns-resize' }}
+            onMouseDown={e => onMouseDown(e, 'tp')}
+            onTouchStart={e => onTouchStart(e, 'tp')}>
+            <div style={{ borderTop: '2px dashed #00ff88', width: '100%', opacity: 0.85 }} />
+            <div style={{ position: 'absolute', left: '50%', top: -8, transform: 'translateX(-50%)', width: 24, height: 16, background: '#00ff88', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ns-resize', boxShadow: '0 0 8px rgba(0,255,136,0.5)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
+                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
+              </div>
+            </div>
+            <div style={{ position: 'absolute', right: 8, top: -11, background: 'rgba(0,200,100,0.9)', borderRadius: '3px', padding: '1px 8px', fontSize: '10px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span>TP {tpVal.toFixed(decimals)}</span>
+              {pnlEst !== null && <span style={{ opacity: 0.8 }}>{pnlEst >= 0 ? '+' : ''}${pnlEst.toFixed(2)}</span>}
+            </div>
+          </div>
+        )
+      })()}
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ─────────────────────────────────────────────────────
 export default function SimulatorPage({ user }) {
   const [startingBalance, setStartingBalance] = useState(null)
@@ -585,11 +740,20 @@ export default function SimulatorPage({ user }) {
       {/* ── CHART + SIDEBAR ── */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 280px', overflow: 'hidden', minHeight: 0 }}>
 
-        {/* Chart — full drawing toolbar on left, bleed edges to remove TV internal gaps */}
+        {/* Chart — full drawing toolbar on left + SL/TP overlay */}
         <div style={{ position: 'relative', overflow: 'hidden', minHeight: 0 }}>
           <div style={{ position: 'absolute', top: 0, bottom: 0, left: '-2px', right: '-2px' }}>
             <TradingViewChart symbol={asset.symbol} />
           </div>
+
+          {/* SL/TP draggable lines overlay */}
+          <SLTPOverlay
+            price={price}
+            sl={sl} setSl={setSl}
+            tp={tp} setTp={setTp}
+            positions={positions}
+            decimals={decimals}
+          />
         </div>
 
         {/* ── RIGHT SIDEBAR ── */}
