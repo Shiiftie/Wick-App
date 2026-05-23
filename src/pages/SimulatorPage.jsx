@@ -113,56 +113,143 @@ const TOOL_GROUPS = [
 
 // ─── HOOKS ─────────────────────────────────────────────────────────
 
+// Global price store — shared across all instances
+const TV_PRICES = {}
+const TV_LISTENERS = {}
+
+function notifyPriceListeners(symbol, price) {
+  if (TV_LISTENERS[symbol]) {
+    TV_LISTENERS[symbol].forEach(fn => fn(price))
+  }
+}
+
+// Hidden TradingView single-quote widget injects real prices via postMessage
 function useLivePrice(symbol) {
   const [price, setPrice] = useState(BASE_PRICES[symbol] || 100)
-  const priceRef = useRef(BASE_PRICES[symbol] || 100)
+  const containerRef = useRef(null)
+  const scriptRef = useRef(null)
 
   useEffect(() => {
-    // Reset to base price immediately on symbol change
+    // Reset to base on symbol change
     const base = BASE_PRICES[symbol] || 100
-    priceRef.current = base
-    setPrice(base)
+    setPrice(TV_PRICES[symbol] || base)
 
-    // Map our symbol format to Yahoo Finance ticker
-    const YAHOO_MAP = {
-      'FX:EURUSD': 'EURUSD=X', 'FX:GBPUSD': 'GBPUSD=X',
-      'FX:USDJPY': 'JPY=X', 'FX:AUDUSD': 'AUDUSD=X',
-      'FX:USDCAD': 'CAD=X', 'FX:USDCHF': 'CHF=X',
+    // Register listener
+    if (!TV_LISTENERS[symbol]) TV_LISTENERS[symbol] = new Set()
+    const listener = (p) => { TV_PRICES[symbol] = p; setPrice(p) }
+    TV_LISTENERS[symbol].add(listener)
+
+    // Inject hidden TradingView ticker tape for this symbol to get real price
+    if (!containerRef.current) {
+      containerRef.current = document.createElement('div')
+      containerRef.current.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;'
+      document.body.appendChild(containerRef.current)
+    }
+
+    containerRef.current.innerHTML = ''
+    if (scriptRef.current) scriptRef.current = null
+
+    const script = document.createElement('script')
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js'
+    script.async = true
+    script.innerHTML = JSON.stringify({
+      symbol,
+      width: 200,
+      height: 60,
+      locale: 'en',
+      colorTheme: 'dark',
+      isTransparent: false,
+      autosize: false,
+    })
+    containerRef.current.appendChild(script)
+    scriptRef.current = script
+
+    // Listen for postMessage from TradingView widgets
+    const handleMessage = (e) => {
+      try {
+        if (!e.data) return
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
+        // TradingView sends price data in various message formats
+        if (d?.name === 'tv-widget-quote' || d?.type === 'price') {
+          const p = d?.price || d?.data?.price
+          if (p && p > 0) notifyPriceListeners(symbol, parseFloat(p))
+        }
+        // Also intercept chart widget price updates
+        if (d?.data?.price && typeof d.data.price === 'number' && d.data.price > 0) {
+          notifyPriceListeners(symbol, d.data.price)
+        }
+      } catch {}
+    }
+    window.addEventListener('message', handleMessage)
+
+    // Fallback: use a proxy-friendly endpoint via allorigins
+    const FINNHUB_MAP = {
+      'FX:EURUSD': 'OANDA:EUR_USD', 'FX:GBPUSD': 'OANDA:GBP_USD',
+      'FX:USDJPY': 'OANDA:USD_JPY', 'FX:AUDUSD': 'OANDA:AUD_USD',
+      'FX:USDCAD': 'OANDA:USD_CAD', 'FX:USDCHF': 'OANDA:USD_CHF',
       'NASDAQ:AAPL': 'AAPL', 'NASDAQ:TSLA': 'TSLA',
       'NASDAQ:NVDA': 'NVDA', 'CME_MINI:ES1!': 'ES=F',
       'CME_MINI:NQ1!': 'NQ=F', 'AMEX:SPY': 'SPY',
-      'BINANCE:BTCUSDT': 'BTC-USD', 'BINANCE:ETHUSDT': 'ETH-USD',
-      'BINANCE:SOLUSDT': 'SOL-USD', 'BINANCE:XRPUSDT': 'XRP-USD',
+      'BINANCE:BTCUSDT': 'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT': 'BINANCE:ETHUSDT',
+      'BINANCE:SOLUSDT': 'BINANCE:SOLUSDT', 'BINANCE:XRPUSDT': 'BINANCE:XRPUSDT',
     }
 
-    const ticker = YAHOO_MAP[symbol]
-    if (!ticker) return
+    // Use Binance public API for crypto (no CORS issues)
+    const BINANCE_MAP = {
+      'BINANCE:BTCUSDT': 'BTCUSDT',
+      'BINANCE:ETHUSDT': 'ETHUSDT',
+      'BINANCE:SOLUSDT': 'SOLUSDT',
+      'BINANCE:XRPUSDT': 'XRPUSDT',
+    }
 
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m&range=1d`,
-          { headers: { 'User-Agent': 'Mozilla/5.0' } }
-        )
-        if (!res.ok) return
-        const data = await res.json()
-        const result = data?.chart?.result?.[0]
-        const meta = result?.meta
-        if (!meta) return
-        const livePrice = meta.regularMarketPrice || meta.previousClose
-        if (livePrice && livePrice > 0) {
-          priceRef.current = livePrice
-          setPrice(livePrice)
+    let iv = null
+    const binanceTicker = BINANCE_MAP[symbol]
+    if (binanceTicker) {
+      const fetchBinance = async () => {
+        try {
+          const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceTicker}`)
+          if (!res.ok) return
+          const data = await res.json()
+          const p = parseFloat(data.price)
+          if (p > 0) { TV_PRICES[symbol] = p; setPrice(p) }
+        } catch {}
+      }
+      fetchBinance()
+      iv = setInterval(fetchBinance, 5000)
+    } else {
+      // For stocks/forex — use a CORS proxy to Yahoo Finance
+      const YAHOO_MAP = {
+        'FX:EURUSD': 'EURUSD=X', 'FX:GBPUSD': 'GBPUSD=X',
+        'FX:USDJPY': 'JPY=X', 'FX:AUDUSD': 'AUDUSD=X',
+        'FX:USDCAD': 'CAD=X', 'FX:USDCHF': 'CHF=X',
+        'NASDAQ:AAPL': 'AAPL', 'NASDAQ:TSLA': 'TSLA',
+        'NASDAQ:NVDA': 'NVDA', 'CME_MINI:ES1!': 'ES=F',
+        'CME_MINI:NQ1!': 'NQ=F', 'AMEX:SPY': 'SPY',
+      }
+      const yticker = YAHOO_MAP[symbol]
+      if (yticker) {
+        const fetchPrice = async () => {
+          try {
+            // Use allorigins.win as CORS proxy
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yticker}?interval=1m&range=1d`
+            const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            const res = await fetch(proxy)
+            if (!res.ok) return
+            const data = await res.json()
+            const p = data?.chart?.result?.[0]?.meta?.regularMarketPrice
+            if (p && p > 0) { TV_PRICES[symbol] = p; setPrice(p) }
+          } catch {}
         }
-      } catch (e) {
-        // silently keep last known price
+        fetchPrice()
+        iv = setInterval(fetchPrice, 10000)
       }
     }
 
-    fetchPrice()
-    // Refresh every 15 seconds for near-realtime updates
-    const iv = setInterval(fetchPrice, 15000)
-    return () => clearInterval(iv)
+    return () => {
+      TV_LISTENERS[symbol]?.delete(listener)
+      window.removeEventListener('message', handleMessage)
+      if (iv) clearInterval(iv)
+    }
   }, [symbol])
 
   return price
@@ -295,154 +382,159 @@ function ToolsGuide({ onClose }) {
 // ─── SL/TP DRAGGABLE OVERLAY ────────────────────────────────────────
 function SLTPOverlay({ price, sl, setSl, tp, setTp, positions, decimals }) {
   const containerRef = useRef(null)
-  const dragging = useRef(null) // 'sl' | 'tp' | null
+  const dragging = useRef(null)
   const startY = useRef(0)
   const startPrice = useRef(0)
+  const [containerH, setContainerH] = useState(0)
 
-  // Price range to display — show ±2% around current price
-  const range = price * 0.04
-  const minP = price - range
-  const maxP = price + range
-
-  const priceToY = useCallback((p, h) => {
-    return ((maxP - p) / (maxP - minP)) * h
-  }, [minP, maxP])
-
-  const yToPrice = useCallback((y, h) => {
-    return maxP - (y / h) * (maxP - minP)
-  }, [minP, maxP])
-
-  const onMouseDown = (e, type) => {
-    e.preventDefault()
-    dragging.current = type
-    startY.current = e.clientY
-    startPrice.current = type === 'sl' ? parseFloat(sl) : parseFloat(tp)
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-  }
-
-  const onTouchStart = (e, type) => {
-    dragging.current = type
-    startY.current = e.touches[0].clientY
-    startPrice.current = type === 'sl' ? parseFloat(sl) : parseFloat(tp)
-    window.addEventListener('touchmove', onTouchMove, { passive: false })
-    window.addEventListener('touchend', onMouseUp)
-  }
-
-  const onMouseMove = useCallback((e) => {
-    if (!dragging.current || !containerRef.current) return
-    const h = containerRef.current.getBoundingClientRect().height
-    const dy = e.clientY - startY.current
-    const dprice = -(dy / h) * (maxP - minP)
-    const newPrice = parseFloat((startPrice.current + dprice).toFixed(decimals))
-    if (dragging.current === 'sl') setSl(String(newPrice))
-    else setTp(String(newPrice))
-  }, [maxP, minP, decimals, setSl, setTp])
-
-  const onTouchMove = useCallback((e) => {
-    e.preventDefault()
-    if (!dragging.current || !containerRef.current) return
-    const h = containerRef.current.getBoundingClientRect().height
-    const dy = e.touches[0].clientY - startY.current
-    const dprice = -(dy / h) * (maxP - minP)
-    const newPrice = parseFloat((startPrice.current + dprice).toFixed(decimals))
-    if (dragging.current === 'sl') setSl(String(newPrice))
-    else setTp(String(newPrice))
-  }, [maxP, minP, decimals, setSl, setTp])
-
-  const onMouseUp = useCallback(() => {
-    dragging.current = null
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-    window.removeEventListener('touchmove', onTouchMove)
-    window.removeEventListener('touchend', onMouseUp)
-  }, [onMouseMove, onTouchMove])
+  // Track container height with ResizeObserver
+  useEffect(() => {
+    if (!containerRef.current) return
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setContainerH(entry.contentRect.height)
+      }
+    })
+    ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [])
 
   const slVal = parseFloat(sl)
   const tpVal = parseFloat(tp)
   const hasSL = sl && !isNaN(slVal) && slVal > 0
   const hasTP = tp && !isNaN(tpVal) && tpVal > 0
-
-  // Only show overlay if there's an active position or pending SL/TP
   const hasPosition = positions.length > 0
-  if (!hasSL && !hasTP) return null
+
+  // Price range ±3% around current price for mapping
+  const range = price * 0.06
+  const minP = price - range
+  const maxP = price + range
+
+  const priceToY = (p) => containerH > 0 ? ((maxP - p) / (maxP - minP)) * containerH : -1
+  const yToPrice = (y) => maxP - (y / containerH) * (maxP - minP)
+
+  const onMouseDown = (e, type) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragging.current = type
+    startY.current = e.clientY
+    startPrice.current = type === 'sl' ? slVal : tpVal
+
+    const onMove = (ev) => {
+      if (!dragging.current) return
+      const dy = ev.clientY - startY.current
+      const dprice = -(dy / containerH) * (maxP - minP)
+      const newP = parseFloat((startPrice.current + dprice).toFixed(decimals))
+      if (dragging.current === 'sl') setSl(String(newP))
+      else setTp(String(newP))
+    }
+    const onUp = () => {
+      dragging.current = null
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  const onTouchStart = (e, type) => {
+    e.stopPropagation()
+    dragging.current = type
+    startY.current = e.touches[0].clientY
+    startPrice.current = type === 'sl' ? slVal : tpVal
+
+    const onMove = (ev) => {
+      ev.preventDefault()
+      if (!dragging.current) return
+      const dy = ev.touches[0].clientY - startY.current
+      const dprice = -(dy / containerH) * (maxP - minP)
+      const newP = parseFloat((startPrice.current + dprice).toFixed(decimals))
+      if (dragging.current === 'sl') setSl(String(newP))
+      else setTp(String(newP))
+    }
+    const onUp = () => {
+      dragging.current = null
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onUp)
+  }
+
+  if (!hasSL && !hasTP) {
+    return <div ref={containerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }} />
+  }
+
+  const renderLine = (type, val, color, bgColor) => {
+    const y = priceToY(val)
+    if (containerH === 0 || y < 14 || y > containerH - 14) return null
+
+    const pnlEst = hasPosition
+      ? ((positions[0].direction === 'long' ? val - positions[0].entry : positions[0].entry - val) / positions[0].entry * positions[0].size * 1000)
+      : null
+
+    return (
+      <div
+        key={type}
+        onMouseDown={e => onMouseDown(e, type)}
+        onTouchStart={e => onTouchStart(e, type)}
+        style={{ position: 'absolute', left: 0, right: 0, top: y, cursor: 'ns-resize', pointerEvents: 'all', zIndex: 20 }}>
+        {/* Dashed line */}
+        <div style={{ width: '100%', borderTop: `2px dashed ${color}`, opacity: 0.9 }} />
+        {/* Center drag handle */}
+        <div style={{
+          position: 'absolute', left: '50%', top: -9,
+          transform: 'translateX(-50%)',
+          width: 28, height: 18,
+          background: color, borderRadius: 4,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'ns-resize',
+          boxShadow: `0 0 10px ${color}88`,
+          userSelect: 'none',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {[0,1].map(i => <div key={i} style={{ width: 12, height: 1.5, background: 'rgba(0,0,0,0.7)', borderRadius: 1 }} />)}
+          </div>
+        </div>
+        {/* Right label */}
+        <div style={{
+          position: 'absolute', right: 12, top: -12,
+          background: bgColor, borderRadius: 4,
+          padding: '2px 9px', fontSize: '10px', fontWeight: '800',
+          color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace',
+          display: 'flex', gap: 8, alignItems: 'center',
+          boxShadow: `0 2px 8px rgba(0,0,0,0.4)`,
+          userSelect: 'none',
+        }}>
+          <span>{type.toUpperCase()} {val.toFixed(decimals)}</span>
+          {pnlEst !== null && (
+            <span style={{ opacity: 0.85, color: pnlEst >= 0 ? '#00ff88' : '#ff8888' }}>
+              {pnlEst >= 0 ? '+' : ''}${pnlEst.toFixed(2)}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div ref={containerRef} style={{
-      position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-      pointerEvents: 'none', zIndex: 10,
-    }}>
-      {/* Entry line — white dashed if position open */}
-      {hasPosition && positions[0] && (() => {
-        const h = containerRef.current?.getBoundingClientRect().height || 400
-        const y = priceToY(positions[0].entry, h)
-        if (y < 0 || y > h) return null
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}>
+      {/* Entry line */}
+      {hasPosition && (() => {
+        const y = priceToY(positions[0].entry)
+        if (containerH === 0 || y < 0 || y > containerH) return null
         return (
-          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'none' }}>
-            <div style={{ borderTop: '1px dashed rgba(255,255,255,0.4)', width: '100%' }} />
-            <div style={{ position: 'absolute', right: 8, top: -10, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '3px', padding: '1px 7px', fontSize: '10px', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+          <div key="entry" style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'none' }}>
+            <div style={{ borderTop: '1px dashed rgba(255,255,255,0.35)', width: '100%' }} />
+            <div style={{ position: 'absolute', right: 12, top: -10, background: 'rgba(40,40,40,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 8px', fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap', fontFamily: 'monospace', userSelect: 'none' }}>
               ENTRY {positions[0].entry.toFixed(decimals)}
             </div>
           </div>
         )
       })()}
 
-      {/* SL line — red */}
-      {hasSL && (() => {
-        const h = containerRef.current?.getBoundingClientRect().height || 400
-        const y = priceToY(slVal, h)
-        if (y < 10 || y > h - 10) return null
-        const pnlEst = hasPosition
-          ? ((positions[0].direction === 'long' ? slVal - positions[0].entry : positions[0].entry - slVal) / positions[0].entry * positions[0].size * 1000)
-          : null
-        return (
-          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'all', cursor: 'ns-resize' }}
-            onMouseDown={e => onMouseDown(e, 'sl')}
-            onTouchStart={e => onTouchStart(e, 'sl')}>
-            {/* Line */}
-            <div style={{ borderTop: '2px dashed #ff4466', width: '100%', opacity: 0.85 }} />
-            {/* Drag handle */}
-            <div style={{ position: 'absolute', left: '50%', top: -8, transform: 'translateX(-50%)', width: 24, height: 16, background: '#ff4466', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ns-resize', boxShadow: '0 0 8px rgba(255,68,102,0.5)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
-                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
-              </div>
-            </div>
-            {/* Label */}
-            <div style={{ position: 'absolute', right: 8, top: -11, background: 'rgba(255,68,102,0.9)', borderRadius: '3px', padding: '1px 8px', fontSize: '10px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace', display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span>SL {slVal.toFixed(decimals)}</span>
-              {pnlEst !== null && <span style={{ opacity: 0.8 }}>{pnlEst >= 0 ? '+' : ''}${pnlEst.toFixed(2)}</span>}
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* TP line — green */}
-      {hasTP && (() => {
-        const h = containerRef.current?.getBoundingClientRect().height || 400
-        const y = priceToY(tpVal, h)
-        if (y < 10 || y > h - 10) return null
-        const pnlEst = hasPosition
-          ? ((positions[0].direction === 'long' ? tpVal - positions[0].entry : positions[0].entry - tpVal) / positions[0].entry * positions[0].size * 1000)
-          : null
-        return (
-          <div style={{ position: 'absolute', left: 0, right: 0, top: y, pointerEvents: 'all', cursor: 'ns-resize' }}
-            onMouseDown={e => onMouseDown(e, 'tp')}
-            onTouchStart={e => onTouchStart(e, 'tp')}>
-            <div style={{ borderTop: '2px dashed #00ff88', width: '100%', opacity: 0.85 }} />
-            <div style={{ position: 'absolute', left: '50%', top: -8, transform: 'translateX(-50%)', width: 24, height: 16, background: '#00ff88', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'ns-resize', boxShadow: '0 0 8px rgba(0,255,136,0.5)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
-                <div style={{ width: 10, height: 1, background: 'rgba(0,0,0,0.6)', borderRadius: 1 }} />
-              </div>
-            </div>
-            <div style={{ position: 'absolute', right: 8, top: -11, background: 'rgba(0,200,100,0.9)', borderRadius: '3px', padding: '1px 8px', fontSize: '10px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', fontFamily: 'monospace', display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span>TP {tpVal.toFixed(decimals)}</span>
-              {pnlEst !== null && <span style={{ opacity: 0.8 }}>{pnlEst >= 0 ? '+' : ''}${pnlEst.toFixed(2)}</span>}
-            </div>
-          </div>
-        )
-      })()}
+      {hasSL && renderLine('sl', slVal, '#ff4466', 'rgba(200,20,50,0.92)')}
+      {hasTP && renderLine('tp', tpVal, '#00ff88', 'rgba(0,160,80,0.92)')}
     </div>
   )
 }
