@@ -11,26 +11,26 @@ import {
 
 const ASSETS = {
   forex: [
-    { symbol: 'FX:EURUSD', label: 'EUR/USD', pip: 0.0001, spread: 0.00012 },
-    { symbol: 'FX:GBPUSD', label: 'GBP/USD', pip: 0.0001, spread: 0.00014 },
-    { symbol: 'FX:USDJPY', label: 'USD/JPY', pip: 0.01,   spread: 0.012 },
-    { symbol: 'FX:AUDUSD', label: 'AUD/USD', pip: 0.0001, spread: 0.00013 },
-    { symbol: 'FX:USDCAD', label: 'USD/CAD', pip: 0.0001, spread: 0.00015 },
-    { symbol: 'FX:USDCHF', label: 'USD/CHF', pip: 0.0001, spread: 0.00013 },
+    { symbol: 'FX:EURUSD', label: 'EUR/USD', pip: 0.0001, spread: 0.00012, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 10 },
+    { symbol: 'FX:GBPUSD', label: 'GBP/USD', pip: 0.0001, spread: 0.00014, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 10 },
+    { symbol: 'FX:USDJPY', label: 'USD/JPY', pip: 0.01, spread: 0.012, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 9.1 },
+    { symbol: 'FX:AUDUSD', label: 'AUD/USD', pip: 0.0001, spread: 0.00013, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 10 },
+    { symbol: 'FX:USDCAD', label: 'USD/CAD', pip: 0.0001, spread: 0.00015, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 7.4 },
+    { symbol: 'FX:USDCHF', label: 'USD/CHF', pip: 0.0001, spread: 0.00013, unitType: 'lot', unitLabel: 'Lots', unitSizes: [0.01, 0.1, 0.5, 1.0], defaultSize: 0.1, pnlPerUnit: 11 },
   ],
   stocks: [
-    { symbol: 'NASDAQ:AAPL',   label: 'AAPL', pip: 0.01, spread: 0.02 },
-    { symbol: 'NASDAQ:TSLA',   label: 'TSLA', pip: 0.01, spread: 0.05 },
-    { symbol: 'NASDAQ:NVDA',   label: 'NVDA', pip: 0.01, spread: 0.03 },
-    { symbol: 'CME_MINI:ES1!', label: 'ES',   pip: 0.25, spread: 0.25 },
-    { symbol: 'CME_MINI:NQ1!', label: 'NQ',   pip: 0.25, spread: 0.25 },
-    { symbol: 'AMEX:SPY',      label: 'SPY',  pip: 0.01, spread: 0.01 },
+    { symbol: 'NASDAQ:AAPL', label: 'AAPL', pip: 0.01, spread: 0.02, unitType: 'shares', unitLabel: 'Shares', unitSizes: [1, 5, 10, 50], defaultSize: 10, pnlPerUnit: 1 },
+    { symbol: 'NASDAQ:TSLA', label: 'TSLA', pip: 0.01, spread: 0.05, unitType: 'shares', unitLabel: 'Shares', unitSizes: [1, 5, 10, 50], defaultSize: 10, pnlPerUnit: 1 },
+    { symbol: 'NASDAQ:NVDA', label: 'NVDA', pip: 0.01, spread: 0.03, unitType: 'shares', unitLabel: 'Shares', unitSizes: [1, 5, 10, 50], defaultSize: 10, pnlPerUnit: 1 },
+    { symbol: 'CME_MINI:ES1!', label: 'ES', pip: 0.25, spread: 0.25, unitType: 'contract', unitLabel: 'Contracts', unitSizes: [1, 2, 5, 10], defaultSize: 1, pnlPerUnit: 50 },
+    { symbol: 'CME_MINI:NQ1!', label: 'NQ', pip: 0.25, spread: 0.25, unitType: 'contract', unitLabel: 'Contracts', unitSizes: [1, 2, 5, 10], defaultSize: 1, pnlPerUnit: 20 },
+    { symbol: 'AMEX:SPY', label: 'SPY', pip: 0.01, spread: 0.01, unitType: 'shares', unitLabel: 'Shares', unitSizes: [1, 5, 10, 100], defaultSize: 10, pnlPerUnit: 1 },
   ],
   crypto: [
-    { symbol: 'BINANCE:BTCUSDT', label: 'BTC/USD', pip: 1,      spread: 5 },
-    { symbol: 'BINANCE:ETHUSDT', label: 'ETH/USD', pip: 0.01,   spread: 0.5 },
-    { symbol: 'BINANCE:SOLUSDT', label: 'SOL/USD', pip: 0.01,   spread: 0.05 },
-    { symbol: 'BINANCE:XRPUSDT', label: 'XRP/USD', pip: 0.0001, spread: 0.0003 },
+    { symbol: 'BINANCE:BTCUSDT', label: 'BTC/USD', pip: 1, spread: 5, unitType: 'coin', unitLabel: 'BTC', unitSizes: [0.001, 0.01, 0.1, 1.0], defaultSize: 0.01, pnlPerUnit: 1 },
+    { symbol: 'BINANCE:ETHUSDT', label: 'ETH/USD', pip: 0.01, spread: 0.5, unitType: 'coin', unitLabel: 'ETH', unitSizes: [0.01, 0.1, 1.0, 5.0], defaultSize: 0.1, pnlPerUnit: 1 },
+    { symbol: 'BINANCE:SOLUSDT', label: 'SOL/USD', pip: 0.01, spread: 0.05, unitType: 'coin', unitLabel: 'SOL', unitSizes: [0.1, 1.0, 10.0, 50.0], defaultSize: 1.0, pnlPerUnit: 1 },
+    { symbol: 'BINANCE:XRPUSDT', label: 'XRP/USD', pip: 0.0001, spread: 0.0003, unitType: 'coin', unitLabel: 'XRP', unitSizes: [10, 100, 1000, 5000], defaultSize: 100, pnlPerUnit: 1 },
   ],
 }
 
@@ -41,6 +41,13 @@ const BASE_PRICES = {
   'CME_MINI:ES1!': 5428.50, 'CME_MINI:NQ1!': 19234.25, 'AMEX:SPY': 542.80,
   'BINANCE:BTCUSDT': 68420, 'BINANCE:ETHUSDT': 3520,
   'BINANCE:SOLUSDT': 172.40, 'BINANCE:XRPUSDT': 0.5821,
+}
+
+function calcPnL(asset, direction, entry, current, size) {
+  const diff = direction === 'long' ? current - entry : entry - current
+  if (asset && asset.unitType === 'lot') { return (diff / asset.pip) * asset.pnlPerUnit * size }
+  if (asset && asset.unitType === 'contract') { return diff * asset.pnlPerUnit * size }
+  return diff * size
 }
 
 const BALANCE_OPTIONS = [
@@ -437,7 +444,7 @@ export default function SimulatorPage({ user }) {
   const [category, setCategory] = useState('stocks')
   const [asset, setAsset] = useState(ASSETS.stocks[0])
   const [direction, setDirection] = useState('long')
-  const [size, setSize] = useState('1000')
+  const [size, setSize] = useState(String(asset.defaultSize || 1))
   const [sl, setSl] = useState('')
   const [tp, setTp] = useState('')
   const [positions, setPositions] = useState([])
@@ -463,7 +470,7 @@ export default function SimulatorPage({ user }) {
 
   const openPnl = positions.reduce((sum, p) => {
     const diff = p.direction === 'long' ? price - p.entry : p.entry - price
-    return sum + (diff / p.entry) * p.size
+    return sum + calcPnL(p.asset, p.direction, p.entry, price, p.size)
   }, 0)
 
   // Auto-close all positions if daily loss limit hit
@@ -473,7 +480,7 @@ export default function SimulatorPage({ user }) {
       setRiskWarning('Daily loss limit reached. All positions closed.')
       positions.forEach(pos => {
         const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-        const pnl = (diff / pos.entry) * pos.size
+        const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
         setBalance(b => b + pnl)
         setHistory(h => [{ ...pos, closePrice: price, pnl, closedAt: new Date(), autoClose: true }, ...h])
       })
@@ -504,7 +511,7 @@ export default function SimulatorPage({ user }) {
     const pos = positions.find(p => p.id === id)
     if (!pos) return
     const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-    const pnl = (diff / pos.entry) * pos.size
+    const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
     setFlash(pnl >= 0 ? 'profit' : 'loss')
     setTimeout(() => setFlash(null), 500)
     setBalance(b => b + pnl)
@@ -827,7 +834,7 @@ export default function SimulatorPage({ user }) {
               <AnimatePresence>
                 {positions.map(pos => {
                   const diff = pos.direction === 'long' ? price - pos.entry : pos.entry - price
-                  const pnl = (diff / pos.entry) * pos.size
+                  const pnl = calcPnL(pos.asset, pos.direction, pos.entry, price, pos.size)
                   const profit = pnl >= 0
                   const color = profit ? '#00ff88' : '#ff4466'
                   return (
