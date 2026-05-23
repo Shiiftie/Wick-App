@@ -50,6 +50,8 @@ function calcPnL(asset, direction, entry, current, size) {
   return diff * size
 }
 
+function calcPnL(a,dir,entry,cur,size){const d=dir=="long"?cur-entry:entry-cur;if(a&&a.unitType=="lot")return(d/a.pip)*a.pnlPerUnit*size;if(a&&a.unitType=="contract")return d*a.pnlPerUnit*size;return d*size;}
+
 const BALANCE_OPTIONS = [
   { value: 10000,  label: '$10K',  subtitle: 'Starter' },
   { value: 25000,  label: '$25K',  subtitle: 'Intermediate' },
