@@ -121,7 +121,6 @@ Sessions logged: ${sessionStats.sessions || 0}` : ''}
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': '', // handled by proxy — see note
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
@@ -132,7 +131,7 @@ Sessions logged: ${sessionStats.sessions || 0}` : ''}
         }),
       })
 
-      if (!aiRes.ok) throw new Error(`AI error: ${aiRes.status}`)
+      if (!aiRes.ok) throw new Error('AI error: ' + aiRes.status)
       const aiData = await aiRes.json()
       const wickaiText = aiData.content?.[0]?.text || "Systems temporarily offline, sir."
 
