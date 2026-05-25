@@ -277,7 +277,6 @@ export default function App() {
         setIsSubscribed(data?.is_subscribed === true)
       } catch (err) {
         console.error('Auth check failed:', err)
-        setIsSubscribed(false)
       } finally {
         clearTimeout(timeout)
         setLoading(false)
