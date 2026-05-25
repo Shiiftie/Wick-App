@@ -16,6 +16,7 @@ import TradingRulesPage from './pages/TradingRulesPage'
 import TradingFloorPage from './pages/TradingFloorPage'
 import SimulatorPage from './pages/SimulatorPage'
 import { Zap, CheckCircle } from 'lucide-react'
+import WickAIButton from './components/WickAIButton'
 
 function AuthPage() {
   const [email, setEmail] = useState('')
@@ -294,5 +295,10 @@ export default function App() {
 
   if (!user) return <AuthPage />
   if (!isSubscribed) return <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
-  return <AppShell user={user} />
+  return (
+    <>
+      <AppShell user={user} />
+      <WickAIButton user={user} />
+    </>
+  )
 }
