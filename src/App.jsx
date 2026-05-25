@@ -17,6 +17,7 @@ import TradingFloorPage from './pages/TradingFloorPage'
 import SimulatorPage from './pages/SimulatorPage'
 import { Zap, CheckCircle } from 'lucide-react'
 import WickAIButton from './components/WickAIButton'
+import WickAIButton from './components/WickAIButton'
 
 function AuthPage() {
   const [email, setEmail] = useState('')
