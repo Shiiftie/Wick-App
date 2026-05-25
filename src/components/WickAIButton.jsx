@@ -1,4 +1,5 @@
-﻿import { useState, useRef, useEffect } from "react"
+﻿import React from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 const SYSTEM_PROMPT = "You are WICK AI, a sophisticated female AI trading assistant built into the Wick trading journal app. You are elegant, precise, confident with sharp wit. Keep responses to 1-3 sentences max. You know trading psychology, risk management, and the Wick platform."
