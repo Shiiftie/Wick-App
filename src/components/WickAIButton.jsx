@@ -44,14 +44,7 @@ export default function WickAIButton({ user }) {
     // Find best female voice
     const voices = window.speechSynthesis.getVoices()
     const femaleVoice = voices.find(v =>
-      v.name.includes('Zira') ||
-      v.name.includes('Samantha') ||
-      v.name.includes('Victoria') ||
-      v.name.includes('Karen') ||
-      v.name.includes('Moira') ||
-      v.name.includes('female') ||
-      v.name.includes('Female') ||
-      (v.name.includes('Google') && v.name.includes('US') && !v.name.includes('Male'))
+      v.name === 'Google UK English Female' || v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen') || (v.name.includes('Google') && v.name.includes('Female'))
     ) || voices.find(v => v.lang === 'en-US') || voices[0]
     if (femaleVoice) utt.voice = femaleVoice
     utt.rate = 0.95
