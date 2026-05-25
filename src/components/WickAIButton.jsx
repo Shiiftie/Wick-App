@@ -134,8 +134,7 @@ export default function WickAIButton({ user }) {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           style={{ width: 68, height: 68, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,200,74,0.2), #050505)", border: "2px solid rgba(232,200,74,0.7)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}
         >
-          <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 900, color: gold, letterSpacing: 1, lineHeight: 1.2 }}>WICK</span>
-          <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 900, color: gold, letterSpacing: 1, lineHeight: 1.2 }}>AI</span>
+          <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 900, color: gold, letterSpacing: 1, lineHeight: 1.2 }}>VEGA</span>
         </motion.button>
       </div>
 
