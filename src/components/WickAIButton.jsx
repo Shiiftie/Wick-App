@@ -1,8 +1,10 @@
 ﻿import React, { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
-export default function WickAIButton({ user }) {
+export default function WickAIButton({ user, externalOpen, onExternalClose }) {
   const [isOpen, setIsOpen] = useState(false)
+  useEffect(() => { if (externalOpen) setIsOpen(true) }, [externalOpen])
+  useEffect(() => { if (!isOpen && onExternalClose) onExternalClose() }, [isOpen])
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
