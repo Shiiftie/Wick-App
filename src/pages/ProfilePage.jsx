@@ -10,7 +10,7 @@ const COLORS = [
 
 function ImageCropper({ imageUrl, onSave, onCancel }) {
   const canvasRef = useRef(null)
-  const [scale, setScale] = useState(1)
+  const [scale, setScale] = useState(0.1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -21,7 +21,10 @@ function ImageCropper({ imageUrl, onSave, onCancel }) {
     const img = new Image()
     img.onload = () => {
       imgRef.current = img
-      drawCanvas(img, 1, { x: 0, y: 0 })
+      // Auto-fit: scale so image fills the circle snugly
+      const fitScale = Math.min(SIZE / img.width, SIZE / img.height)
+      setScale(fitScale)
+      drawCanvas(img, fitScale, { x: 0, y: 0 })
     }
     img.src = imageUrl
   }, [imageUrl])
@@ -98,19 +101,19 @@ function ImageCropper({ imageUrl, onSave, onCancel }) {
           <canvas ref={canvasRef} width={SIZE} height={SIZE}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}
-            onWheel={(e) => setScale(s => Math.min(4, Math.max(0.5, s - e.deltaY * 0.001)))}
+            onWheel={(e) => setScale(s => Math.min(4, Math.max(0.05, s - e.deltaY * 0.001)))}
             style={{ cursor: dragging ? 'grabbing' : 'grab', borderRadius: '50%', userSelect: 'none', touchAction: 'none' }} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))}
+          <button onClick={() => setScale(s => Math.max(0.05, s - 0.05))}
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', cursor: 'pointer', padding: '8px', display: 'flex' }}>
             <ZoomOut size={16} />
           </button>
-          <input type="range" min="0.5" max="4" step="0.01" value={scale}
+          <input type="range" min="0.05" max="4" step="0.005" value={scale}
             onChange={(e) => setScale(parseFloat(e.target.value))}
             style={{ flex: 1, accentColor: '#e8c84a' }} />
-          <button onClick={() => setScale(s => Math.min(4, s + 0.1))}
+          <button onClick={() => setScale(s => Math.min(4, s + 0.05))}
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', cursor: 'pointer', padding: '8px', display: 'flex' }}>
             <ZoomIn size={16} />
           </button>
