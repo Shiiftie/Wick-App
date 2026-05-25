@@ -156,7 +156,7 @@ export default function WickAIButton({ user }) {
                   style={{ width: 7, height: 7, borderRadius: "50%", background: gold, boxShadow: "0 0 8px " + gold }}
                 />
                 <div>
-                  <div style={{ fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 }}>VEGA</div>
                   <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: 1 }}>{status}</div>
                 </div>
               </div>
@@ -175,7 +175,7 @@ export default function WickAIButton({ user }) {
                 : response
                   ? <div style={{ fontSize: 13, color: "rgba(240,238,232,0.9)", lineHeight: 1.65, fontStyle: "italic" }}>"{response}"</div>
                   : <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", fontFamily: "monospace" }}>
-                      {isListening ? (displayTranscript || "Listening... take your time.") : isThinking ? "Thinking..." : "Speak or type to talk to WICK AI."}
+                      {isListening ? (displayTranscript || "Listening... take your time.") : isThinking ? "Thinking..." : "Speak or type to talk to VEGA."}
                     </div>
               }
             </div>
@@ -201,7 +201,7 @@ export default function WickAIButton({ user }) {
                 <input
                   value={textInput}
                   onChange={e => setTextInput(e.target.value)}
-                  placeholder="Ask WICK AI anything..."
+                  placeholder="Ask VEGA anything..."
                   disabled={isThinking}
                   style={{ flex: 1, padding: "9px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(232,200,74,0.2)", borderRadius: 9, color: "#fff", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                 />
