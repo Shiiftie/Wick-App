@@ -11,7 +11,6 @@ export default function WickAIButton({ user }) {
   const [messages, setMessages] = useState([])
   const [error, setError] = useState(null)
   const recRef = useRef(null)
-  const audioRef = useRef(null)
   const transcriptRef = useRef("")
   const gold = "#e8c84a"
 
@@ -38,8 +37,35 @@ export default function WickAIButton({ user }) {
     recRef.current = r
   }, [])
 
+  const speak = (text) => {
+    if (!window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utt = new SpeechSynthesisUtterance(text)
+    // Find best female voice
+    const voices = window.speechSynthesis.getVoices()
+    const femaleVoice = voices.find(v =>
+      v.name.includes('Zira') ||
+      v.name.includes('Samantha') ||
+      v.name.includes('Victoria') ||
+      v.name.includes('Karen') ||
+      v.name.includes('Moira') ||
+      v.name.includes('female') ||
+      v.name.includes('Female') ||
+      (v.name.includes('Google') && v.name.includes('US') && !v.name.includes('Male'))
+    ) || voices.find(v => v.lang === 'en-US') || voices[0]
+    if (femaleVoice) utt.voice = femaleVoice
+    utt.rate = 0.95
+    utt.pitch = 1.1
+    utt.volume = 1
+    utt.onstart = () => setIsSpeaking(true)
+    utt.onend = () => setIsSpeaking(false)
+    utt.onerror = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utt)
+  }
+
   const startListen = () => {
     if (!recRef.current) return
+    window.speechSynthesis.cancel()
     transcriptRef.current = ""
     setDisplayTranscript("")
     setResponse("")
@@ -68,21 +94,9 @@ export default function WickAIButton({ user }) {
       setResponse(reply)
       setMessages([...newMsgs, { role: "assistant", content: reply }])
       setIsThinking(false)
-      if (data.audioBase64) {
-        setIsSpeaking(true)
-        const binary = atob(data.audioBase64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-        const blob = new Blob([bytes], { type: "audio/mpeg" })
-        const url = URL.createObjectURL(blob)
-        const audio = new Audio(url)
-        audioRef.current = audio
-        audio.onended = function() { setIsSpeaking(false); URL.revokeObjectURL(url) }
-        audio.play()
-      }
+      speak(reply)
     } catch (err) {
       setIsThinking(false)
-      setIsSpeaking(false)
       setError("Connection issue. Try again.")
     }
   }
@@ -113,7 +127,7 @@ export default function WickAIButton({ user }) {
                 <div style={{ width: 7, height: 7, borderRadius: "50%", background: gold, boxShadow: "0 0 6px " + gold }} />
                 <div style={{ fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI - {status}</div>
               </div>
-              <button onClick={() => { setIsOpen(false); if (audioRef.current) audioRef.current.pause() }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 18 }}>x</button>
+              <button onClick={() => { setIsOpen(false); window.speechSynthesis.cancel() }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 18 }}>x</button>
             </div>
             <div style={{ padding: 16, minHeight: 80 }}>
               {error
@@ -135,7 +149,7 @@ export default function WickAIButton({ user }) {
               </button>
               {response && (
                 <button
-                  onClick={() => { setDisplayTranscript(""); setResponse(""); setError(null); transcriptRef.current = "" }}
+                  onClick={() => { setDisplayTranscript(""); setResponse(""); setError(null); transcriptRef.current = ""; window.speechSynthesis.cancel() }}
                   style={{ padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(255,255,255,0.3)", fontSize: 11, cursor: "pointer", fontFamily: "monospace" }}
                 >CLR</button>
               )}
