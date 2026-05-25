@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './supabase'
 import Navbar from './components/Navbar'
@@ -16,6 +16,7 @@ import TradingRulesPage from './pages/TradingRulesPage'
 import TradingFloorPage from './pages/TradingFloorPage'
 import SimulatorPage from './pages/SimulatorPage'
 import { Zap, CheckCircle } from 'lucide-react'
+import WickAIButton from './components/WickAIButton'
 
 function AuthPage() {
   const [email, setEmail] = useState('')
@@ -165,7 +166,7 @@ function PaywallPage({ user, onSignOut }) {
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSubscribe} disabled={loading}
             style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #e8c84a, #d4b030)', color: '#000', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Zap size={18} />
-            {loading ? 'Loading...' : 'Subscribe Now — $9.99/mo'}
+            {loading ? 'Loading...' : 'Subscribe Now â€” $9.99/mo'}
           </motion.button>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>Cancel anytime. No hidden fees.</p>
         </motion.div>
@@ -294,5 +295,5 @@ export default function App() {
 
   if (!user) return <AuthPage />
   if (!isSubscribed) return <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
-  return <AppShell user={user} />
+  return (<><AppShell user={user} /><WickAIButton user={user} /></>)
 }
