@@ -17,7 +17,6 @@ import TradingFloorPage from './pages/TradingFloorPage'
 import SimulatorPage from './pages/SimulatorPage'
 import { Zap, CheckCircle } from 'lucide-react'
 import WickAIButton from './components/WickAIButton'
-import WickAIButton from './components/WickAIButton'
 
 function AuthPage() {
   const [email, setEmail] = useState('')
@@ -167,7 +166,7 @@ function PaywallPage({ user, onSignOut }) {
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSubscribe} disabled={loading}
             style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #e8c84a, #d4b030)', color: '#000', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Zap size={18} />
-            {loading ? 'Loading...' : 'Subscribe Now â€” $9.99/mo'}
+            {loading ? 'Loading...' : 'Subscribe Now — $9.99/mo'}
           </motion.button>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', marginTop: '12px' }}>Cancel anytime. No hidden fees.</p>
         </motion.div>
@@ -257,6 +256,7 @@ export default function App() {
       try {
         if (!sessionUser) {
           setUser(null)
+          setIsSubscribed(false)
           return
         }
         setUser(sessionUser)
@@ -264,13 +264,20 @@ export default function App() {
         if (params.get('subscription') === 'success') {
           await supabase.from('profiles').upsert({ id: sessionUser.id, is_subscribed: true })
           setIsSubscribed(true)
+          window.history.replaceState({}, '', window.location.pathname)
           return
         }
-        const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', sessionUser.id).single()
-        setIsSubscribed(data?.is_subscribed || false)
+        // Always force fresh fetch from Supabase — never trust cache
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_subscribed')
+          .eq('id', sessionUser.id)
+          .single()
+        if (error) throw error
+        setIsSubscribed(data?.is_subscribed === true)
       } catch (err) {
         console.error('Auth check failed:', err)
-        setUser(null)
+        setIsSubscribed(false)
       } finally {
         clearTimeout(timeout)
         setLoading(false)
@@ -296,5 +303,10 @@ export default function App() {
 
   if (!user) return <AuthPage />
   if (!isSubscribed) return <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
-  return (<><AppShell user={user} /><WickAIButton user={user} /></>)
+  return (
+    <>
+      <AppShell user={user} />
+      <WickAIButton user={user} />
+    </>
+  )
 }
