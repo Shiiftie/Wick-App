@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const SYSTEM_PROMPT = "You are WICK AI, a sophisticated female AI trading assistant. You are elegant, precise, confident with sharp wit. Keep responses to 1-3 sentences. You know trading psychology, risk management, and the Wick app."
@@ -96,7 +96,7 @@ export default function WickAIButton({ user }) {
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: gold }} />
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI � {status}</div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI · {status}</div>
               </div>
               <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 18 }}>x</button>
             </div>
