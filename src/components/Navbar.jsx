@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2, Newspaper, Target, BookOpen, Menu, X, FlaskConical } from 'lucide-react'
+import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2, Newspaper, Target, BookOpen, Menu, X, FlaskConical, Bot } from 'lucide-react'
 import { supabase } from '../supabase'
 
 const navItems = [
@@ -68,7 +68,7 @@ function LiveTicker({ items }) {
   )
 }
 
-export default function Navbar({ view, setView, user, onLogout }) {
+export default function Navbar({ view, setView, user, onLogout, onOpenVega }) {
   const [profile, setProfile] = useState(null)
   const [tickerItems, setTickerItems] = useState([])
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
@@ -125,7 +125,6 @@ export default function Navbar({ view, setView, user, onLogout }) {
     <>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}>
         <LiveTicker items={displayItems} />
-
         <nav style={{
           borderBottom: '1px solid rgba(232,200,74,0.08)',
           background: 'rgba(5,5,5,0.92)',
@@ -153,13 +152,12 @@ export default function Navbar({ view, setView, user, onLogout }) {
                       color: active ? (isSimulator ? '#00ff88' : '#e8c84a') : 'rgba(255,255,255,0.35)',
                       fontSize: '13px', fontWeight: active ? '700' : '400',
                       cursor: 'pointer', transition: 'color 0.2s, background 0.2s',
-                      boxShadow: active && isSimulator ? 'inset 0 0 12px rgba(0,255,136,0.08)' : active ? 'inset 0 0 12px rgba(232,200,74,0.08)' : 'none',
                     }}
                     onMouseEnter={e => { if (!active) { e.currentTarget.style.color = isSimulator ? 'rgba(0,255,136,0.7)' : 'rgba(232,200,74,0.7)'; e.currentTarget.style.background = isSimulator ? 'rgba(0,255,136,0.05)' : 'rgba(232,200,74,0.05)' } }}
                     onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'transparent' } }}
                   >
                     {active && <div style={{ position: 'absolute', inset: 0, borderRadius: '8px', background: isSimulator ? 'radial-gradient(ellipse at 50% 100%, rgba(0,255,136,0.15) 0%, transparent 70%)' : 'radial-gradient(ellipse at 50% 100%, rgba(232,200,74,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />}
-                    <Icon size={14} strokeWidth={active ? 2.5 : 1.8} style={{ filter: active ? (isSimulator ? 'drop-shadow(0 0 4px rgba(0,255,136,0.7))' : 'drop-shadow(0 0 4px rgba(232,200,74,0.7))') : 'none' }} />
+                    <Icon size={14} strokeWidth={active ? 2.5 : 1.8} />
                     {label}
                     {active && (
                       <motion.div layoutId="activeTab"
@@ -230,10 +228,20 @@ export default function Navbar({ view, setView, user, onLogout }) {
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: 'none', background: active ? (isSimulator ? 'rgba(0,255,136,0.1)' : 'rgba(232,200,74,0.1)') : 'transparent', color: active ? (isSimulator ? '#00ff88' : '#e8c84a') : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: active ? '700' : '400', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                   <Icon size={16} strokeWidth={active ? 2.5 : 1.8} />
                   {label}
-                  {active && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: isSimulator ? '#00ff88' : '#e8c84a', boxShadow: isSimulator ? '0 0 6px rgba(0,255,136,0.8)' : '0 0 6px rgba(232,200,74,0.8)' }} />}
+                  {active && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: isSimulator ? '#00ff88' : '#e8c84a' }} />}
                 </motion.button>
               )
             })}
+
+            {/* VEGA button in mobile menu */}
+            <motion.button whileTap={{ scale: 0.97 }}
+              onClick={() => { if (onOpenVega) onOpenVega(); setMenuOpen(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(232,200,74,0.2)', background: 'rgba(232,200,74,0.06)', color: '#e8c84a', fontSize: '14px', fontWeight: '700', cursor: 'pointer', textAlign: 'left', width: '100%', marginTop: '4px' }}>
+              <Bot size={16} />
+              VEGA AI Assistant
+              <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: '#e8c84a', boxShadow: '0 0 6px rgba(232,200,74,0.8)', animation: 'vegaPulse 2s ease-in-out infinite' }} />
+            </motion.button>
+
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '4px', paddingTop: '4px' }}>
               <motion.button whileTap={{ scale: 0.97 }} onClick={onLogout}
                 style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: 'none', background: 'transparent', color: 'rgba(255,100,100,0.7)', fontSize: '14px', fontWeight: '400', cursor: 'pointer', width: '100%' }}>
@@ -264,13 +272,24 @@ export default function Navbar({ view, setView, user, onLogout }) {
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} style={{ filter: active ? (isSimulator ? 'drop-shadow(0 0 4px rgba(0,255,136,0.7))' : 'drop-shadow(0 0 4px rgba(232,200,74,0.7))') : 'none' }} />
+                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
                 <span style={{ fontSize: '10px', fontWeight: active ? '700' : '400' }}>{label}</span>
               </motion.button>
             )
           })}
+          {/* VEGA in bottom tab bar */}
+          <motion.button whileTap={{ scale: 0.9 }}
+            onClick={() => { if (onOpenVega) onOpenVega(); setMenuOpen(false) }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', flex: 1, height: '100%', background: 'transparent', border: 'none', cursor: 'pointer', color: '#e8c84a', position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
+              <Bot size={20} strokeWidth={2} />
+              <div style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: '50%', background: '#e8c84a', boxShadow: '0 0 6px rgba(232,200,74,0.8)' }} />
+            </div>
+            <span style={{ fontSize: '10px', fontWeight: '700' }}>VEGA</span>
+          </motion.button>
         </div>
       )}
+      <style>{`@keyframes vegaPulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }`}</style>
     </>
   )
 }
