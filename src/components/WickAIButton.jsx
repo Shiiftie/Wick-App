@@ -1,8 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
-const SYSTEM_PROMPT = "You are WICK AI, a sophisticated female AI trading assistant built into the Wick trading journal app. You are elegant, precise, confident with sharp wit. Keep responses to 1-3 sentences max. You know trading psychology, risk management, and the Wick platform."
-
 export default function WickAIButton({ user }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -15,8 +13,6 @@ export default function WickAIButton({ user }) {
   const recRef = useRef(null)
   const audioRef = useRef(null)
   const transcriptRef = useRef("")
-  const VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID
-  const EL_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY
   const gold = "#e8c84a"
 
   useEffect(() => {
@@ -72,21 +68,17 @@ export default function WickAIButton({ user }) {
       setResponse(reply)
       setMessages([...newMsgs, { role: "assistant", content: reply }])
       setIsThinking(false)
-      if (EL_KEY) {
+      if (data.audioBase64) {
         setIsSpeaking(true)
-        const tts = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID, {
-          method: "POST",
-          headers: { "xi-api-key": EL_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ text: reply, model_id: "eleven_turbo_v2_5", voice_settings: { stability: 0.72, similarity_boost: 0.85 } })
-        })
-        if (tts.ok) {
-          const blob = await tts.blob()
-          const url = URL.createObjectURL(blob)
-          const audio = new Audio(url)
-          audioRef.current = audio
-          audio.onended = function() { setIsSpeaking(false); URL.revokeObjectURL(url) }
-          audio.play()
-        } else { setIsSpeaking(false) }
+        const binary = atob(data.audioBase64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+        const blob = new Blob([bytes], { type: "audio/mpeg" })
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        audioRef.current = audio
+        audio.onended = function() { setIsSpeaking(false); URL.revokeObjectURL(url) }
+        audio.play()
       }
     } catch (err) {
       setIsThinking(false)
