@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 
 export default function CandleBackground() {
   const canvasRef = useRef(null)
@@ -88,7 +88,7 @@ export default function CandleBackground() {
     }
 
     function animate() {
-      offset += 0.006
+      offset += 0.016
       if (offset + 60 >= candles.length) {
         const last = candles[candles.length - 1]
         const body = (Math.random() - 0.49) * 18
