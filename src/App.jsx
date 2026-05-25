@@ -119,6 +119,7 @@ function AppShell({ user }) {
   const [sessions, setSessions] = useState([])
   const [xp, setXp] = useState(0)
   const [dmRecipient, setDmRecipient] = useState(null)
+  const [vegaOpen, setVegaOpen] = useState(false)
   const fetchSessions = async () => { const { data } = await supabase.from("sessions").select("*").order("date", { ascending: false }); if (data) setSessions(data) }
   const fetchXp = async () => { const { data } = await supabase.from("profiles").select("xp").eq("id", user.id).single(); if (data) setXp(data.xp || 0) }
   useEffect(() => { fetchSessions(); fetchXp() }, [])
@@ -131,7 +132,7 @@ function AppShell({ user }) {
     <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "Inter, sans-serif", position: "relative" }}>
       <CandleBackground />
       <div style={{ position: "relative", zIndex: 2 }}>
-        <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
+        <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} onOpenVega={() => setVegaOpen(true)} />
         <main style={{ paddingTop: "calc(env(safe-area-inset-top) + 88px)" }}>
           <div style={{ maxWidth: isFullWidth ? "100%" : "1100px", margin: "0 auto", padding: isFullWidth ? "0" : "24px" }}>
             <AnimatePresence mode="wait">
@@ -208,7 +209,7 @@ export default function App() {
   return (
     <>
       <AppShell user={user} />
-      <WickAIButton user={user} />
+      <WickAIButton user={user} externalOpen={vegaOpen} onExternalClose={() => setVegaOpen(false)} />
     </>
   )
 }
