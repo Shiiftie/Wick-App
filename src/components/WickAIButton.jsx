@@ -117,7 +117,7 @@ export default function WickAIButton({ user, externalOpen, onExternalClose }) {
 
   return (
     <>
-      <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 1000 }}>
+      <div style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom) + 80px)", right: 28, zIndex: 1000 }}>
         <motion.div
           animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -147,7 +147,7 @@ export default function WickAIButton({ user, externalOpen, onExternalClose }) {
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            style={{ position: "fixed", bottom: 110, right: 24, zIndex: 999, width: 310, background: "rgba(6,6,6,0.97)", border: "1px solid rgba(232,200,74,0.25)", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.8)" }}
+            style={{ position: "fixed", bottom: "calc(env(safe-area-inset-bottom) + 155px)", right: 24, zIndex: 999, width: 310, background: "rgba(6,6,6,0.97)", border: "1px solid rgba(232,200,74,0.25)", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.8)" }}
           >
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(232,200,74,0.03)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
