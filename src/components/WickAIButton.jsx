@@ -62,13 +62,13 @@ export default function WickAIButton({ user }) {
     const newMsgs = [...messages, { role: "user", content: text }]
     setMessages(newMsgs)
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://hhxxrhtzhfmfudpmznkx.supabase.co/functions/v1/wick-ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 150, system: SYSTEM_PROMPT, messages: newMsgs })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMsgs })
       })
       const data = await res.json()
-      const reply = (data.content && data.content[0] && data.content[0].text) || "Connection error."
+      const reply = data.reply || "Connection error."
       setResponse(reply)
       setMessages([...newMsgs, { role: "assistant", content: reply }])
       setIsThinking(false)
@@ -105,9 +105,8 @@ export default function WickAIButton({ user }) {
         whileTap={{ scale: 0.94 }}
         style={{ position: "fixed", bottom: 28, right: 28, zIndex: 1000, width: 56, height: 56, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,200,74,0.15), #050505)", border: "1.5px solid rgba(232,200,74,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 24px rgba(232,200,74,0.2)" }}
       >
-        <span style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 700, color: gold, letterSpacing: 1, textAlign: "center", lineHeight: 1.4 }}>WICK{"\n"}AI</span>
+        <span style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 700, color: gold, letterSpacing: 1, textAlign: "center", lineHeight: 1.4 }}>WICK AI</span>
       </motion.button>
-
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -120,11 +119,10 @@ export default function WickAIButton({ user }) {
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 7, height: 7, borderRadius: "50%", background: gold, boxShadow: "0 0 6px " + gold }} />
-                <div style={{ fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI · {status}</div>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI - {status}</div>
               </div>
               <button onClick={() => { setIsOpen(false); if (audioRef.current) audioRef.current.pause() }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 18 }}>x</button>
             </div>
-
             <div style={{ padding: 16, minHeight: 80 }}>
               {error
                 ? <div style={{ fontSize: 12, color: "#ff4466" }}>{error}</div>
@@ -135,7 +133,6 @@ export default function WickAIButton({ user }) {
                     </div>
               }
             </div>
-
             <div style={{ padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 8 }}>
               <button
                 onClick={isListening ? stopListen : startListen}
