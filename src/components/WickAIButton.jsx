@@ -1,21 +1,22 @@
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+ï»¿import { useState, useRef, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
-const SYSTEM_PROMPT = "You are WICK AI, a sophisticated female AI trading assistant. You are elegant, precise, confident with sharp wit. Keep responses to 1-3 sentences. You know trading psychology, risk management, and the Wick app."
+const SYSTEM_PROMPT = "You are WICK AI, a sophisticated female AI trading assistant built into the Wick trading journal app. You are elegant, precise, confident with sharp wit. Keep responses to 1-3 sentences max. You know trading psychology, risk management, and the Wick platform."
 
 export default function WickAIButton({ user }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [response, setResponse] = useState('')
+  const [transcript, setTranscript] = useState("")
+  const [response, setResponse] = useState("")
   const [messages, setMessages] = useState([])
   const [error, setError] = useState(null)
   const recRef = useRef(null)
   const audioRef = useRef(null)
   const VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID
   const EL_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY
+  const gold = "#e8c84a"
 
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -23,7 +24,7 @@ export default function WickAIButton({ user }) {
     const r = new SR()
     r.continuous = false
     r.interimResults = true
-    r.onresult = (e) => setTranscript(Array.from(e.results).map(x => x[0].transcript).join(''))
+    r.onresult = (e) => setTranscript(Array.from(e.results).map(x => x[0].transcript).join(""))
     r.onend = () => setIsListening(false)
     r.onerror = () => setIsListening(false)
     recRef.current = r
@@ -31,13 +32,13 @@ export default function WickAIButton({ user }) {
 
   const startListen = () => {
     if (!recRef.current) return
-    setTranscript(''); setResponse(''); setError(null)
+    setTranscript(""); setResponse(""); setError(null)
     setIsListening(true)
     recRef.current.start()
   }
 
   const stopListen = () => {
-    recRef.current?.stop()
+    recRef.current && recRef.current.stop()
     setIsListening(false)
     if (transcript.trim()) sendMessage(transcript.trim())
   }
@@ -45,76 +46,86 @@ export default function WickAIButton({ user }) {
   const sendMessage = async (text) => {
     if (!text.trim()) return
     setIsThinking(true)
-    const newMsgs = [...messages, { role: 'user', content: text }]
+    const newMsgs = [...messages, { role: "user", content: text }]
     setMessages(newMsgs)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 150, system: SYSTEM_PROMPT, messages: newMsgs }),
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 150, system: SYSTEM_PROMPT, messages: newMsgs })
       })
       const data = await res.json()
-      const reply = data.content?.[0]?.text || 'Connection error.'
+      const reply = (data.content && data.content[0] && data.content[0].text) || "Connection error."
       setResponse(reply)
-      setMessages([...newMsgs, { role: 'assistant', content: reply }])
+      setMessages([...newMsgs, { role: "assistant", content: reply }])
       setIsThinking(false)
       if (EL_KEY) {
         setIsSpeaking(true)
-        const tts = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID, {
-          method: 'POST',
-          headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: reply, model_id: 'eleven_monolingual_v1', voice_settings: { stability: 0.72, similarity_boost: 0.85 } }),
+        const tts = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID, {
+          method: "POST",
+          headers: { "xi-api-key": EL_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ text: reply, model_id: "eleven_monolingual_v1", voice_settings: { stability: 0.72, similarity_boost: 0.85 } })
         })
         if (tts.ok) {
           const blob = await tts.blob()
           const url = URL.createObjectURL(blob)
           const audio = new Audio(url)
           audioRef.current = audio
-          audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url) }
+          audio.onended = function() { setIsSpeaking(false); URL.revokeObjectURL(url) }
           audio.play()
-        } else { setIsSpeaking(false) }
+        } else {
+          setIsSpeaking(false)
+        }
       }
     } catch (err) {
       setIsThinking(false); setIsSpeaking(false)
-      setError('Connection issue.')
+      setError("Connection issue.")
     }
   }
 
-  const gold = '#e8c84a'
-  const status = isListening ? 'LISTENING' : isSpeaking ? 'SPEAKING' : isThinking ? 'THINKING' : 'STANDBY'
+  const status = isListening ? "LISTENING" : isSpeaking ? "SPEAKING" : isThinking ? "THINKING" : "STANDBY"
 
-  return (
-    <>
-      <motion.button onClick={() => setIsOpen(o => !o)} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }}
-        style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 1000, width: 56, height: 56, borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,200,74,0.15), #050505)', border: '1.5px solid rgba(232,200,74,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(232,200,74,0.2)' }}>
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, fontWeight: 700, color: gold, letterSpacing: 1, textAlign: 'center', lineHeight: 1.4 }}>WICK{'\n'}AI</span>
-      </motion.button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-            style={{ position: 'fixed', bottom: 96, right: 24, zIndex: 999, width: 290, background: 'rgba(6,6,6,0.97)', border: '1px solid rgba(232,200,74,0.2)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: gold }} />
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: gold, letterSpacing: 2 }}>WICK AI · {status}</div>
-              </div>
-              <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 18 }}>x</button>
-            </div>
-            <div style={{ padding: 16, minHeight: 72 }}>
-              {error ? <div style={{ fontSize: 12, color: '#ff4466' }}>{error}</div>
-               : response ? <div style={{ fontSize: 13, color: 'rgba(240,238,232,0.9)', lineHeight: 1.65, fontStyle: 'italic' }}>"{response}"</div>
-               : <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontFamily: 'DM Mono, monospace' }}>{isListening ? transcript || '...' : 'Tap speak to talk to Wick AI.'}</div>}
-            </div>
-            <div style={{ padding: '10px 16px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 8 }}>
-              <button onClick={isListening ? stopListen : startListen} disabled={isThinking || isSpeaking}
-                style={{ flex: 1, padding: '9px', background: isListening ? 'rgba(232,200,74,0.12)' : 'rgba(232,200,74,0.05)', border: '1px solid rgba(232,200,74,0.3)', borderRadius: 8, color: gold, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Mono, monospace', letterSpacing: 1, opacity: isThinking || isSpeaking ? 0.4 : 1 }}>
-                {isListening ? 'STOP' : 'SPEAK'}
-              </button>
-              {response && <button onClick={() => { setTranscript(''); setResponse(''); setError(null) }} style={{ padding: '9px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'rgba(255,255,255,0.3)', fontSize: 11, cursor: 'pointer', fontFamily: 'DM Mono, monospace' }}>CLR</button>}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+  return React.createElement(React.Fragment, null,
+    React.createElement(motion.button, {
+      onClick: function() { setIsOpen(function(o) { return !o }) },
+      whileHover: { scale: 1.08 },
+      whileTap: { scale: 0.94 },
+      style: { position: "fixed", bottom: 28, right: 28, zIndex: 1000, width: 56, height: 56, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,200,74,0.15), #050505)", border: "1.5px solid rgba(232,200,74,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 24px rgba(232,200,74,0.2)" }
+    },
+      React.createElement("span", { style: { fontFamily: "monospace", fontSize: 9, fontWeight: 700, color: gold, letterSpacing: 1, textAlign: "center", lineHeight: 1.4 } }, "WICK AI")
+    ),
+    React.createElement(AnimatePresence, null,
+      isOpen && React.createElement(motion.div, {
+        key: "panel",
+        initial: { opacity: 0, y: 16 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 16 },
+        style: { position: "fixed", bottom: 96, right: 24, zIndex: 999, width: 290, background: "rgba(6,6,6,0.97)", border: "1px solid rgba(232,200,74,0.2)", borderRadius: 14, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.8)" }
+      },
+        React.createElement("div", { style: { padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" } },
+          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+            React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: gold } }),
+            React.createElement("div", { style: { fontFamily: "monospace", fontSize: 11, color: gold, letterSpacing: 2 } }, "WICK AI - " + status)
+          ),
+          React.createElement("button", { onClick: function() { setIsOpen(false); audioRef.current && audioRef.current.pause() }, style: { background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 18 } }, "x")
+        ),
+        React.createElement("div", { style: { padding: 16, minHeight: 72 } },
+          error ? React.createElement("div", { style: { fontSize: 12, color: "#ff4466" } }, error)
+          : response ? React.createElement("div", { style: { fontSize: 13, color: "rgba(240,238,232,0.9)", lineHeight: 1.65, fontStyle: "italic" } }, '"' + response + '"')
+          : React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.2)", fontFamily: "monospace" } }, isListening ? (transcript || "...") : "Tap speak to talk to Wick AI.")
+        ),
+        React.createElement("div", { style: { padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 8 } },
+          React.createElement("button", {
+            onClick: isListening ? stopListen : startListen,
+            disabled: isThinking || isSpeaking,
+            style: { flex: 1, padding: "9px", background: isListening ? "rgba(232,200,74,0.12)" : "rgba(232,200,74,0.05)", border: "1px solid rgba(232,200,74,0.3)", borderRadius: 8, color: gold, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "monospace", letterSpacing: 1, opacity: isThinking || isSpeaking ? 0.4 : 1 }
+          }, isListening ? "STOP" : "SPEAK"),
+          response && React.createElement("button", {
+            onClick: function() { setTranscript(""); setResponse(""); setError(null) },
+            style: { padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(255,255,255,0.3)", fontSize: 11, cursor: "pointer", fontFamily: "monospace" }
+          }, "CLR")
+        )
+      )
+    )
   )
 }
