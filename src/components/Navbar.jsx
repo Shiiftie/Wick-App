@@ -100,7 +100,7 @@ export default function Navbar({ view, setView, user, onLogout, onOpenVega }) {
         if (topTraders?.[0]) liveItems.push({ text: `${topTraders[0].username} leads the leaderboard with`, highlight: `${topTraders[0].xp.toLocaleString()} XP` })
         if (topTraders?.[1]) liveItems.push({ text: `${topTraders[1].username} is sitting at`, highlight: `#2 on the leaderboard` })
         if (topTraders?.[2]) liveItems.push({ text: `${topTraders[2].username} is climbing fast`, highlight: `#3 this week` })
-        const { data: recentWins } = await supabase.from('sessions').select('pnl, profiles(username)').eq('outcome', 'win').order('created_at', { ascending: false }).limit(4)
+        const { data: recentWins } = await supabase.from('sessions').select('pnl, profiles!sessions_user_id_fkey(username)').eq('outcome', 'win').order('created_at', { ascending: false }).limit(4)
         recentWins?.forEach(s => { if (s.profiles?.username && s.pnl) liveItems.push({ text: `${s.profiles.username} just logged a`, highlight: `+$${s.pnl} win` }) })
         const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
         if (count) liveItems.push({ text: 'Join', highlight: `${count} traders already using Wick` })
