@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2, Newspaper, Menu, X, FlaskConical, Bot } from 'lucide-react'
+import { Home, Trophy, Users, User, LogOut, MessageSquare, BarChart2, Newspaper, Menu, X, FlaskConical, Bot, CalendarDays } from 'lucide-react'
 import { supabase } from '../supabase'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { id: 'simulator', label: 'Simulator', icon: FlaskConical },
   { id: 'friends', label: 'Friends', icon: Users },
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
 ]
 
 const bottomTabItems = [
@@ -20,6 +21,7 @@ const bottomTabItems = [
   { id: 'simulator', label: 'Sim', icon: FlaskConical },
   { id: 'floor', label: 'Floor', icon: MessageSquare },
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
 ]
 
 const RANK_THRESHOLDS = [
