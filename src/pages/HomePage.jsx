@@ -168,6 +168,7 @@ function SessionLogForm({ user, onSessionSaved }) {
     { value: 'win', label: '🟢 Win', color: 'var(--green)' },
     { value: 'loss', label: '🔴 Loss', color: 'var(--red)' },
     { value: 'no_trade', label: '⚪ No Trade', color: 'var(--text-muted)' },
+    { value: 'demo', label: 'Demo', color: '#00c8ff' },
   ]
 
   return (
