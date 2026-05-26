@@ -51,7 +51,6 @@ function AuthPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
-      <CandleBackground />
       <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         style={{ width: '100%', maxWidth: '420px', padding: '0 24px', position: 'relative', zIndex: 2 }}>
@@ -140,7 +139,6 @@ function PaywallPage({ user, onSignOut }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
-      <CandleBackground />
       <div style={{ position: 'fixed', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', background: 'radial-gradient(ellipse, rgba(232,200,74,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
         style={{ width: '100%', maxWidth: '480px', padding: '24px', position: 'relative', zIndex: 2 }}>
@@ -216,8 +214,7 @@ function AppShell({ user }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
-      <CandleBackground />
+    <div style={{ minHeight: '100vh', background: 'transparent', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
       <div style={{ position: 'relative', zIndex: 2 }}>
         <Navbar view={view} setView={setView} user={user} onLogout={handleLogout} />
         <main style={{ paddingTop: 'calc(env(safe-area-inset-top) + 88px)' }}>
@@ -313,19 +310,30 @@ export default function App() {
     }
   }, [])
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
-        style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: '800', letterSpacing: '-1px' }}>Wick</motion.div>
-    </div>
-  )
-
-  if (!user) return <AuthPage />
-  if (!isSubscribed) return <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
+  // ── CandleBackground rendered ONCE at top level, never unmounts ──
+  // This fixes the "background sometimes doesn't show" bug — it used to
+  // be rendered inside AuthPage / PaywallPage / AppShell, which meant
+  // React was mounting/unmounting the canvas on every state transition.
+  // By rendering it here at the root, it mounts once on app start and
+  // persists across auth state changes, paywall flips, and re-renders.
   return (
     <>
-      <AppShell user={user} />
-      <WickAIButton user={user} />
+      <CandleBackground />
+      {loading ? (
+        <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
+          <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
+            style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: '800', letterSpacing: '-1px' }}>Wick</motion.div>
+        </div>
+      ) : !user ? (
+        <AuthPage />
+      ) : !isSubscribed ? (
+        <PaywallPage user={user} onSignOut={async () => { await supabase.auth.signOut(); setUser(null); setIsSubscribed(false) }} />
+      ) : (
+        <>
+          <AppShell user={user} />
+          <WickAIButton user={user} />
+        </>
+      )}
     </>
   )
 }
