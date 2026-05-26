@@ -288,9 +288,24 @@ export default function App() {
       }
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => checkUser(session?.user ?? null))
+    // Force refresh session on every load to prevent stale cache issues
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        try {
+          const { data: { session: fresh } } = await supabase.auth.refreshSession()
+          checkUser(fresh?.user ?? null)
+        } catch {
+          checkUser(session?.user ?? null)
+        }
+      } else {
+        checkUser(null)
+      }
+    })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => checkUser(session?.user ?? null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') return
+      checkUser(session?.user ?? null)
+    })
 
     return () => {
       subscription.unsubscribe()
