@@ -44,6 +44,11 @@ export default function LogSessionPage({ user, onSessionSaved }) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  const handleOutcomeClick = (value) => {
+    setForm({ ...form, outcome: value })
+    setIsDemo(value === 'demo')
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -87,6 +92,7 @@ export default function LogSessionPage({ user, onSessionSaved }) {
     { value: 'win', label: '🟢 Win', color: 'var(--green)' },
     { value: 'loss', label: '🔴 Loss', color: 'var(--red)' },
     { value: 'no_trade', label: '⚪ No Trade', color: 'var(--text-muted)' },
+    { value: 'demo', label: '🧪 Demo', color: '#00c8ff' },
   ]
 
   return (
@@ -167,7 +173,7 @@ export default function LogSessionPage({ user, onSessionSaved }) {
             <div style={{ display: 'flex', gap: '12px' }}>
               {outcomes.map(({ value, label, color }) => (
                 <motion.button key={value} type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  onClick={() => setForm({ ...form, outcome: value })}
+                  onClick={() => handleOutcomeClick(value)}
                   style={{ flex: 1, padding: '12px', borderRadius: '10px', border: form.outcome === value ? `1px solid ${color}` : '1px solid var(--border)', background: form.outcome === value ? `${color}15` : 'var(--bg-3)', color: form.outcome === value ? color : 'var(--text-dim)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
                   {label}
                 </motion.button>
