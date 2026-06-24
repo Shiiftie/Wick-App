@@ -407,7 +407,7 @@ function TradingFloorSidebar({ user }) {
             <div style={{ width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #7c5cfc, #e8c84a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: '800', color: '#fff', marginTop: '1px' }}>
               {userAvatars[msg.user_id] ? <img src={userAvatars[msg.user_id]} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : msg.username?.[0]?.toUpperCase()}
             </div>
-            <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.5', wordBreak: 'break-word', flex: 1 }}>
+            <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.5', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '10px', marginRight: '5px' }}>{formatTime(msg.created_at)}</span>
               <span style={{ fontWeight: '700', color: userColors[msg.user_id] || '#e8c84a' }}>{msg.username}</span>
               <span style={{ color: 'var(--text-muted)', margin: '0 3px' }}>:</span>
@@ -417,13 +417,13 @@ function TradingFloorSidebar({ user }) {
         ))}
         <div ref={bottomRef} />
       </div>
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', gap: '6px' }}>
-          <span style={{ color: usernameColor, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{username || 'you'}</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>:</span>
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.3)', display: 'flex', gap: '8px', alignItems: 'center', minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', gap: '6px' }}>
+          <span style={{ color: usernameColor, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}>{username || 'you'}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px', flexShrink: 0 }}>:</span>
           <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
             placeholder="Share your thoughts..." maxLength={500}
-            style={{ flex: 1, padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif' }} />
+            style={{ flex: 1, minWidth: 0, width: '100%', padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif' }} />
         </div>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSend} disabled={loading || !input.trim()}
           style={{ width: '32px', height: '32px', background: input.trim() ? 'var(--gold)' : 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
@@ -524,7 +524,7 @@ export default function HomePage({ user, sessions, onSessionSaved, xp, setView }
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <RulesWidget user={user} setView={setView} />
             <SessionLogForm user={user} onSessionSaved={onSessionSaved} />
             <ReportCard user={user} />
@@ -532,7 +532,7 @@ export default function HomePage({ user, sessions, onSessionSaved, xp, setView }
               <SessionFeed sessions={sessions} />
             </div>
           </div>
-          <div style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
             <LeaderboardSidebar />
             <TradingFloorSidebar user={user} />
           </div>
