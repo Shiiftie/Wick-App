@@ -14,7 +14,7 @@ export default function NewsPage() {
     script.async = true
     script.innerHTML = JSON.stringify({
       colorTheme: 'dark',
-      isTransparent: true,
+      isTransparent: false,
       width: '100%',
       height: '100%',
       locale: 'en',
@@ -29,37 +29,13 @@ export default function NewsPage() {
 
     containerRef.current.appendChild(widget)
     containerRef.current.appendChild(script)
-
-    // Force dark mode on the iframe once it loads
-    const interval = setInterval(() => {
-      const iframe = containerRef.current?.querySelector('iframe')
-      if (iframe) {
-        iframe.style.colorScheme = 'dark'
-        clearInterval(interval)
-      }
-    }, 300)
-
-    return () => clearInterval(interval)
   }, [])
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
 
-      <style>{`
-        .tradingview-widget-container iframe {
-          color-scheme: dark !important;
-          filter: invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.1);
-          border-radius: 16px;
-        }
-
-        /* Re-invert images/flags inside so they look normal */
-        .tradingview-widget-container iframe img {
-          filter: invert(1) hue-rotate(180deg);
-        }
-      `}</style>
-
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '2px' }}>Economic Calendar</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Major news events that move the market. Know before you trade.</p>
@@ -79,10 +55,11 @@ export default function NewsPage() {
       </div>
 
       <div style={{
-        flex: 1, borderRadius: '16px', overflow: 'hidden',
+        flex: 1,
+        borderRadius: '16px',
+        overflow: 'hidden',
         border: '1px solid var(--border)',
-        background: '#0d0d0d',
-        boxShadow: 'inset 0 0 40px rgba(0,0,0,0.6)'
+        background: '#131722'
       }}>
         <div ref={containerRef} className="tradingview-widget-container" style={{ height: '100%', width: '100%' }} />
       </div>
